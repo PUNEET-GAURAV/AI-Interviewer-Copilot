@@ -614,6 +614,22 @@ export default function AdminDashboardPage() {
                       📜 Certificate {idx + 1}
                     </button>
                   ))}
+                  <button 
+                    onClick={() => {
+                      const content = `Interview Report - ${selectedCandidate.candidateProfile?.name || 'Anonymous'}\nRole: ${selectedCandidate.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(selectedCandidate.timestamp).toLocaleString()}\nOverall Score: ${selectedCandidate.overallScore}/100\nTechnical: ${selectedCandidate.technicalAvg} | Communication: ${selectedCandidate.communicationAvg} | Problem Solving: ${selectedCandidate.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${selectedCandidate.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/100 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${selectedCandidate.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${selectedCandidate.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
+                      const blob = new Blob([content], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${selectedCandidate.candidateProfile?.name || 'candidate'}_QA_Report.txt`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="btn-primary"
+                    style={{ padding: '8px 16px', fontSize: 13, background: 'var(--accent-blue)', color: '#fff', border: 'none' }}
+                  >
+                    ⬇️ Download Q&A Report (.txt)
+                  </button>
                 </div>
               </div>
 

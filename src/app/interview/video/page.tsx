@@ -13,7 +13,7 @@ import {
   calculateOverallResult,
 } from '@/lib/interview-engine';
 import { generateQuestion, evaluateResponse } from '@/lib/gemini';
-import { FaceMetrics, loadFaceModels, analyzeFrame, aggregateMetrics } from '@/lib/face-analyzer';
+import { FaceMetrics, loadFaceModels, analyzeFrame, aggregateMetrics, captureFaceDescriptor } from '@/lib/face-analyzer';
 import { analyzeTranscript, countFillers, getSpeedCategory } from '@/lib/speech-analyzer';
 import { calculateBehavioralReport, BehavioralReport } from '@/lib/behavioral-scorer';
 import { QRCodeSVG } from 'qrcode.react';
@@ -32,6 +32,13 @@ export default function VideoInterviewPage() {
   const [hasScreenShare, setHasScreenShare] = useState(false);
   const [peerId, setPeerId] = useState('');
   const [mobileConnected, setMobileConnected] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  
+  // Identity state
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [identityCaptured, setIdentityCaptured] = useState(false);
+  const [baseDescriptor, setBaseDescriptor] = useState<Float32Array | null>(null);
+  const [capturingIdentity, setCapturingIdentity] = useState(false);
 
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [round, setRound] = useState<InterviewRound>('intro');
@@ -72,6 +79,7 @@ export default function VideoInterviewPage() {
   const violationCountRef = useRef(0);
   const lastViolationTimeRef = useRef(0);
   const lookAwayCountRef = useRef(0);
+  const mismatchCountRef = useRef(0);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -135,7 +143,10 @@ export default function VideoInterviewPage() {
       try {
         // Try getting both video and audio first
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (isActive && videoRef.current) videoRef.current.srcObject = stream;
+        if (isActive) {
+           setCameraStream(stream);
+           if (videoRef.current) videoRef.current.srcObject = stream;
+        }
         if (isActive) setCameraError('');
       } catch (err: any) {
         if (!isActive) return;
@@ -172,7 +183,7 @@ export default function VideoInterviewPage() {
 
   // Start face analysis loop when models are ready
   useEffect(() => {
-    if (!hasScreenShare || !modelsReady || !videoRef.current || cameraError) {
+    if (!hasScreenShare || !modelsReady || !videoRef.current || cameraError || !identityCaptured) {
        return;
     }
 
@@ -181,7 +192,7 @@ export default function VideoInterviewPage() {
 
     intervalRef.current = setInterval(async () => {
       if (!videoRef.current || !cameraOn || isComplete) return;
-      const metrics = await analyzeFrame(videoRef.current);
+      const metrics = await analyzeFrame(videoRef.current, baseDescriptor || null);
       if (metrics) {
         setLiveMetrics(metrics);
         setFrameHistory(prev => [...prev, metrics]);
@@ -193,13 +204,20 @@ export default function VideoInterviewPage() {
         if (lookAwayCountRef.current > 10) {
           handleLookAwayViolation();
         }
+
+        if (metrics.identityMismatch && metrics.faceDetected) {
+          mismatchCountRef.current += 1;
+          if (mismatchCountRef.current > 3 && !isComplete) { // 3 mismatch hits = violation
+            handleIdentityViolation();
+          }
+        }
       }
     }, 1500); // Analyze every 1.5 seconds
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [hasScreenShare, modelsReady, cameraOn, cameraError, isComplete]); // intentional omit of handleLookAwayViolation to prevent retriggering
+  }, [hasScreenShare, modelsReady, cameraOn, cameraError, isComplete, identityCaptured, baseDescriptor]); // intentional omit of handleLookAwayViolation to prevent retriggering
 
   // Update filler count from transcript
   useEffect(() => {
@@ -381,6 +399,7 @@ export default function VideoInterviewPage() {
       const history = historyStr ? JSON.parse(historyStr) : [];
       history.unshift(rejectedResult);
       localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+      localStorage.setItem('lastInterviewResult', JSON.stringify(rejectedResult));
 
       const completeMsg: Message = {
         id: crypto.randomUUID(), role: 'system',
@@ -395,6 +414,60 @@ export default function VideoInterviewPage() {
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
     }
   }, [hasScreenShare, isComplete, speakText, profile, scores, fullTranscript, fillerCount, startTime]);
+
+  const handleIdentityViolation = useCallback(() => {
+    if (isComplete || !hasScreenShare) return;
+    setIsComplete(true);
+    setShowWarningModal(false);
+    
+    const count = mismatchCountRef.current;
+    
+    const rejectedResult = {
+      candidateProfile: profile,
+      overallScore: 0,
+      scores: scores,
+      technicalAvg: 0,
+      communicationAvg: 0,
+      problemSolvingAvg: 0,
+      strengths: [],
+      improvements: ["Candidate rejected due to an identity mismatch or multiple faces detected."],
+      behavioralReport: {
+        overallScore: 0,
+        technicalScore: 0,
+        communicationScore: 0,
+        confidenceScore: 0,
+        behaviorScore: 0,
+        strengths: [],
+        improvements: [],
+        recommendation: "Rejected (Identity Verification Failed)",
+      },
+      videoMetrics: { emotions: {}, distractions: lookAwayCountRef.current, averageFocus: 0, identityMismatches: count },
+      speechMetrics: { wpm: 0, fillerWords: 0, sentiment: 0, clarity: 0 },
+      interviewType: 'video',
+      duration: Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
+      timestamp: new Date().toISOString(),
+      rejected: true,
+      transcript: "Interview terminated due to identity violation."
+    };
+    
+    const historyStr = localStorage.getItem('interviewHistory');
+    const history = historyStr ? JSON.parse(historyStr) : [];
+    history.unshift(rejectedResult);
+    localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+    localStorage.setItem('lastInterviewResult', JSON.stringify(rejectedResult));
+
+    const completeMsg: Message = {
+      id: crypto.randomUUID(), role: 'system',
+      content: `🚨 **INTERVIEW TERMINATED** 🚨\n\nIdentity verification failed. Multiple people detected or identity mismatch. The interview is now rejected.`,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, completeMsg]);
+    speakText('Attention. Identity verification failed. This interview has been terminated and your application is rejected.');
+    
+    const stream = videoRef.current?.srcObject as MediaStream;
+    stream?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
+  }, [hasScreenShare, isComplete, speakText, profile, scores, startTime]);
 
   const handleLookAwayViolation = useCallback(() => {
     if (isComplete || !hasScreenShare) return;
@@ -435,6 +508,7 @@ export default function VideoInterviewPage() {
     const history = historyStr ? JSON.parse(historyStr) : [];
     history.unshift(rejectedResult);
     localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+    localStorage.setItem('lastInterviewResult', JSON.stringify(rejectedResult));
 
     const completeMsg: Message = {
       id: crypto.randomUUID(), role: 'system',
@@ -690,6 +764,43 @@ export default function VideoInterviewPage() {
     );
   };
 
+  if (!rulesAccepted) {
+    return (
+      <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="glass-card" style={{ maxWidth: 640, width: '100%', padding: '40px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)' }}>Interview Rules & Guidelines</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 8 }}>Please read and agree to the following rules before starting your proctored interview.</p>
+          </div>
+          
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: 24, borderRadius: 16, marginBottom: 32, border: '1px solid var(--glass-border)' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 13, color: 'var(--text-primary)' }}>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>No Cheating:</strong> External materials and screen reading are forbidden.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>No Tab Switching:</strong> Multiple tabs or applications will trigger a warning.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>No Background Coaching:</strong> Complete the interview entirely independently.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>Camera Must Stay On:</strong> Ensure your webcam is always active.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>Face Must Be Visible:</strong> Keep your face well-lit and within the frame.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>One Person Only:</strong> No other individuals are allowed in the room.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>No Phone Usage:</strong> Mobile phones may only be used as a secondary camera.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>Original Answers:</strong> No copying or pasting. Responses must be original.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>Proper Audio:</strong> Ensure a quiet environment with a clear microphone.</span></li>
+              <li style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: 'var(--accent-cyan)' }}>✓</span> <span><strong>Eye Contact:</strong> Maintain eye contact with the camera as much as possible.</span></li>
+            </ul>
+          </div>
+
+          <button 
+            className="btn-primary" 
+            style={{ padding: '16px 24px', fontSize: 16, width: '100%', fontWeight: 700 }}
+            onClick={() => setRulesAccepted(true)}
+          >
+            I Agree to All Rules
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasScreenShare || !mobileConnected) {
     const pairingUrl = typeof window !== 'undefined' ? `${window.location.origin}/interview/mobile-cam?room=${peerId}` : '';
 
@@ -774,6 +885,50 @@ export default function VideoInterviewPage() {
             Share Screen & Start
           </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasScreenShare && mobileConnected && !identityCaptured) {
+    return (
+      <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="glass-card" style={{ maxWidth: 500, width: '100%', padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>📸</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)' }}>3. Identity Verification</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
+            Please look directly at the camera to capture your facial signature. This ensures you are the same person throughout the interview.
+          </p>
+          <div style={{ background: '#000', borderRadius: 12, overflow: 'hidden', marginBottom: 24, position: 'relative', aspectRatio: '16/9' }}>
+            <video 
+              autoPlay playsInline muted 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
+              ref={(v) => {
+                if (v && cameraStream && v.srcObject !== cameraStream) {
+                  v.srcObject = cameraStream;
+                }
+                if (v) videoRef.current = v;
+              }}
+            />
+          </div>
+          <button 
+            disabled={capturingIdentity || !modelsReady}
+            className="btn-primary" 
+            style={{ padding: '14px 24px', fontSize: 16, width: '100%' }}
+            onClick={async () => {
+              setCapturingIdentity(true);
+              const desc = await captureFaceDescriptor(videoRef.current!);
+              if (desc) {
+                setBaseDescriptor(desc);
+                setIdentityCaptured(true);
+              } else {
+                alert('No face detected. Please ensure your face is clearly visible and well-lit.');
+              }
+              setCapturingIdentity(false);
+            }}
+          >
+            {capturingIdentity ? 'Capturing...' : !modelsReady ? 'Loading models...' : 'Capture Identity'}
+          </button>
         </div>
       </div>
     );
@@ -1080,17 +1235,33 @@ export default function VideoInterviewPage() {
               </div>
             </div>
 
-            {/* Cheating Detection */}
+            {/* Integrity & Identity Check */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>Integrity Check</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-                <span style={{ fontSize: 16 }}>{frameHistory.reduce((s, f) => s + f.cheatingFlags, 0) > 10 ? '🚨' : '✅'}</span>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Look-aways: {frameHistory.reduce((s, f) => s + f.cheatingFlags, 0)}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-                    {frameHistory.reduce((s, f) => s + f.cheatingFlags, 0) > 10 ? 'Frequent disengagement' : 'Normal behavior'}
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>Integrity & Identity</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                  <span style={{ fontSize: 16 }}>{frameHistory.reduce((s, f) => s + f.cheatingFlags, 0) > 10 ? '🚨' : '✅'}</span>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Look-aways: {frameHistory.reduce((s, f) => s + f.cheatingFlags, 0)}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                      {frameHistory.reduce((s, f) => s + f.cheatingFlags, 0) > 10 ? 'Frequent disengagement' : 'Normal behavior'}
+                    </div>
                   </div>
                 </div>
+                
+                {liveMetrics?.multipleFacesDetected && (
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.1)', padding: '6px', borderRadius: 6 }}>
+                     <span style={{ fontSize: 16 }}>👥</span>
+                     <div style={{ fontWeight: 600 }}>Multiple Faces Detected</div>
+                   </div>
+                )}
+                
+                {liveMetrics?.identityMismatch && (
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--accent-red)', background: 'rgba(239,68,68,0.1)', padding: '6px', borderRadius: 6 }}>
+                     <span style={{ fontSize: 16 }}>👤</span>
+                     <div style={{ fontWeight: 600 }}>Identity Mismatch Detected</div>
+                   </div>
+                )}
               </div>
             </div>
 

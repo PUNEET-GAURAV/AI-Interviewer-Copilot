@@ -26,6 +26,8 @@ export interface FaceMetrics {
   faceDetected: boolean;
   lookingAway: boolean;
   cheatingFlags: number;
+  multipleFacesDetected?: boolean;
+  identityMismatch?: boolean;
 }
 
 export interface SessionMetrics {
@@ -51,6 +53,7 @@ export async function loadFaceModels(): Promise<boolean> {
       faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
       faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
       faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+      faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
     ]);
     modelsLoaded = true;
     return true;
@@ -65,18 +68,46 @@ export function isModelsLoaded(): boolean {
 }
 
 /**
- * Analyze a single video frame for facial metrics
+ * Extract a single facial descriptor from the video feed.
+ * Used for storing the initial candidate identity.
  */
-export async function analyzeFrame(
+export async function captureFaceDescriptor(
   video: HTMLVideoElement
-): Promise<FaceMetrics | null> {
+): Promise<Float32Array | null> {
   if (!modelsLoaded) return null;
-
   try {
     const detection = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
       .withFaceLandmarks()
-      .withFaceExpressions();
+      .withFaceDescriptor();
+    return detection ? detection.descriptor : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Analyze a single video frame for facial metrics
+ */
+export async function analyzeFrame(
+  video: HTMLVideoElement,
+  baseDescriptor?: Float32Array | null
+): Promise<FaceMetrics | null> {
+  if (!modelsLoaded) return null;
+
+  try {
+    // Detect multiple faces to ensure nobody else is in frame
+    const allFaces = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+      .withFaceLandmarks()
+      .withFaceExpressions()
+      .withFaceDescriptors();
+
+    const multipleFacesDetected = allFaces.length > 1;
+    let identityMismatch = false;
+
+    // Use the primarily detected face (usually the largest one by area)
+    const detection = allFaces.sort((a, b) => b.detection.box.area - a.detection.box.area)[0];
 
     if (!detection) {
       return {
@@ -89,7 +120,15 @@ export async function analyzeFrame(
         faceDetected: false,
         lookingAway: true,
         cheatingFlags: 1,
+        multipleFacesDetected: false,
+        identityMismatch: false,
       };
+    }
+
+    if (baseDescriptor) {
+      const distance = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+      // distance threshold: typically 0.6 is a good balance for face-api.js, we use 0.5 for a bit stricter
+      identityMismatch = distance > 0.55;
     }
 
     const expressions = detection.expressions;
@@ -146,6 +185,8 @@ export async function analyzeFrame(
       faceDetected: true,
       lookingAway,
       cheatingFlags: lookingAway ? 1 : 0,
+      multipleFacesDetected,
+      identityMismatch,
     };
   } catch {
     return null;

@@ -14,6 +14,7 @@ interface EnhancedResult extends InterviewResult {
   speechMetrics?: SpeechMetrics;
   interviewType?: string;
   duration?: number;
+  rejected?: boolean;
 }
 
 function ScoreRing({ score, size = 120, label }: { score: number; size?: number; label: string }) {
@@ -106,14 +107,27 @@ export default function ResultsPage() {
         </div>
 
         {/* Overall Score + Recommendation */}
-        <div className="glass-card glow-cyan" style={{ padding: 36, textAlign: 'center', marginBottom: 24 }}>
-          <ScoreRing score={overallScore} size={140} label="Overall Score" />
-          <div style={{ marginTop: 20, padding: '12px 28px', borderRadius: 14, background: `${recColor}15`, display: 'inline-block', border: `1px solid ${recColor}30` }}>
-            <span style={{ fontWeight: 800, color: recColor, fontSize: 18 }}>
-              {recommendation === 'Strong Hire' ? '🏆' : recommendation === 'Hire' ? '✅' : recommendation === 'Maybe' ? '🔄' : '❌'} {recommendation}
-            </span>
+        {result.rejected ? (
+          <div className="glass-card" style={{ padding: 36, textAlign: 'center', marginBottom: 24, border: '2px solid var(--accent-red)', background: 'rgba(239, 68, 68, 0.05)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🚨</div>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent-red)', marginBottom: 8 }}>Interview Terminated</h2>
+            <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: 20 }}>
+              {result.improvements[0] || 'Candidate rejected due to policy violations.'}
+            </p>
+            <div style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)', fontWeight: 600 }}>
+              Final Decision: Rejected
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="glass-card glow-cyan" style={{ padding: 36, textAlign: 'center', marginBottom: 24 }}>
+            <ScoreRing score={overallScore} size={140} label="Overall Score" />
+            <div style={{ marginTop: 20, padding: '12px 28px', borderRadius: 14, background: `${recColor}15`, display: 'inline-block', border: `1px solid ${recColor}30` }}>
+              <span style={{ fontWeight: 800, color: recColor, fontSize: 18 }}>
+                {recommendation === 'Strong Hire' ? '🏆' : recommendation === 'Hire' ? '✅' : recommendation === 'Maybe' ? '🔄' : '❌'} {recommendation}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Behavioral Dimension Scores (Video interview only) */}
         {isVideo && br && (
