@@ -16,6 +16,7 @@ import { generateQuestion, evaluateResponse } from '@/lib/gemini';
 import { FaceMetrics, loadFaceModels, analyzeFrame, aggregateMetrics } from '@/lib/face-analyzer';
 import { analyzeTranscript, countFillers, getSpeedCategory } from '@/lib/speech-analyzer';
 import { calculateBehavioralReport, BehavioralReport } from '@/lib/behavioral-scorer';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function VideoInterviewPage() {
   const router = useRouter();
@@ -25,8 +26,12 @@ export default function VideoInterviewPage() {
   const recognitionRef = useRef<any>(null);
   const analysisIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+  const mobileVideoRef = useRef<HTMLVideoElement>(null);
+  const mobileStreamRef = useRef<MediaStream | null>(null);
 
   const [hasScreenShare, setHasScreenShare] = useState(false);
+  const [peerId, setPeerId] = useState('');
+  const [mobileConnected, setMobileConnected] = useState(false);
 
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [round, setRound] = useState<InterviewRound>('intro');
@@ -63,13 +68,51 @@ export default function VideoInterviewPage() {
 
   const [violationCount, setViolationCount] = useState(0);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const violationCountRef = useRef(0);
   const lastViolationTimeRef = useRef(0);
   const lookAwayCountRef = useRef(0);
 
-  // Load face-api models
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && hasScreenShare && !isComplete) {
+        setShowFullscreenWarning(true);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [hasScreenShare, isComplete]);
+
+  // Load face-api models & PeerJS
   useEffect(() => {
     loadFaceModels().then(ok => setModelsReady(ok));
+
+    let peerInstance: any = null;
+    if (typeof window !== 'undefined') {
+      import('peerjs').then(({ default: Peer }) => {
+        const peer = new Peer();
+        peerInstance = peer;
+        peer.on('open', (id) => {
+          setPeerId(id);
+        });
+        peer.on('call', (call) => {
+          call.answer(); // don't send anything back
+          call.on('stream', (mobileStream) => {
+            mobileStreamRef.current = mobileStream;
+            if (mobileVideoRef.current) {
+              mobileVideoRef.current.srcObject = mobileStream;
+            }
+            setMobileConnected(true);
+          });
+          call.on('close', () => {
+            setMobileConnected(false);
+          });
+        });
+      }).catch(err => console.error("Failed to load peerjs:", err));
+    }
+    return () => {
+      peerInstance?.destroy();
+    };
   }, []);
 
   // Pre-load voices for SpeechSynthesis to ensure they are available immediately
@@ -647,18 +690,42 @@ export default function VideoInterviewPage() {
     );
   };
 
-  if (!hasScreenShare) {
+  if (!hasScreenShare || !mobileConnected) {
+    const pairingUrl = typeof window !== 'undefined' ? `${window.location.origin}/interview/mobile-cam?room=${peerId}` : '';
+
     return (
       <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div className="glass-card" style={{ maxWidth: 500, width: '100%', padding: '40px 32px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>🖥️</div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)' }}>Screen Share Required</h2>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
-            Before starting the interview, you must share your screen with system audio to ensure a secure and monitored environment. The interview will begin directly with your camera automatically turned on.
-          </p>
-          <button 
-            className="btn-primary" 
-            style={{ padding: '14px 24px', fontSize: 16, width: '100%' }}
+          
+          {!mobileConnected ? (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📱</div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>1. Connect Mobile Camera</h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
+                Scan this QR code with your phone to connect your secondary camera. This is required for proctoring.
+              </p>
+              <div style={{ background: 'white', padding: 16, borderRadius: 12, display: 'inline-block', marginBottom: 8 }}>
+                {peerId ? <QRCodeSVG value={pairingUrl} size={160} /> : <div style={{width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000'}}>Loading...</div>}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Waiting for connection...</div>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 32, padding: 16, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--accent-green)', borderRadius: 12 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+              <h3 style={{ color: 'var(--accent-green)', fontWeight: 600 }}>Mobile Camera Connected!</h3>
+            </div>
+          )}
+
+          <div style={{ opacity: mobileConnected ? 1 : 0.4, transition: 'opacity 0.3s' }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>🖥️</div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)' }}>2. Screen Share Required</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
+              Before starting the interview, you must share your screen with system audio to ensure a secure and monitored environment.
+            </p>
+            <button 
+              disabled={!mobileConnected}
+              className="btn-primary" 
+              style={{ padding: '14px 24px', fontSize: 16, width: '100%' }}
             onClick={async () => {
               try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -695,6 +762,9 @@ export default function VideoInterviewPage() {
                 };
 
                 setHasScreenShare(true);
+                if (document.documentElement.requestFullscreen) {
+                  document.documentElement.requestFullscreen().catch(err => console.error("Fullscreen error:", err));
+                }
               } catch (err: any) {
                 console.error("Screen Share Error:", err);
                 alert('Screen sharing is required to proceed. Please try again and ensure you select "Entire Screen" and share system audio.');
@@ -703,6 +773,7 @@ export default function VideoInterviewPage() {
           >
             Share Screen & Start
           </button>
+          </div>
         </div>
       </div>
     );
@@ -737,6 +808,42 @@ export default function VideoInterviewPage() {
         </div>
       )}
 
+      {/* Fullscreen Warning Modal */}
+      {showFullscreenWarning && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div className="glass-card" style={{ maxWidth: 450, padding: 32, textAlign: 'center', border: '1px solid var(--accent-amber)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🖥️</div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Fullscreen Warning</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+              You have exited full-screen mode. For the best and most secure interview experience, please remain in full-screen.
+            </p>
+            <button 
+              onClick={() => {
+                setShowFullscreenWarning(false);
+                if (document.documentElement.requestFullscreen) {
+                  document.documentElement.requestFullscreen().catch(console.error);
+                }
+              }}
+              className="btn-primary" 
+              style={{ background: 'var(--accent-amber)', color: 'black', border: 'none', padding: '10px 24px', fontSize: 16 }}
+            >
+              Return to Full Screen
+            </button>
+            <button 
+              onClick={() => setShowFullscreenWarning(false)}
+              className="btn-secondary" 
+              style={{ marginTop: 12, padding: '10px 24px', fontSize: 16, width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)',
@@ -756,6 +863,19 @@ export default function VideoInterviewPage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <button onClick={() => {
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+              document.documentElement.requestFullscreen().catch(console.error);
+            } else if (document.fullscreenElement && document.exitFullscreen) {
+              document.exitFullscreen().catch(console.error);
+            }
+          }} style={{
+            padding: '4px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--border-color)', background: 'transparent',
+            color: 'var(--text-primary)', fontFamily: 'Inter',
+          }}>
+            🖥️ Full Screen
+          </button>
           <button onClick={() => setShowAiPanel(!showAiPanel)} style={{
             padding: '4px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
             border: '1px solid var(--border-color)', background: showAiPanel ? 'rgba(0,212,255,0.1)' : 'transparent',
