@@ -6,19 +6,41 @@ import { useState } from 'react';
 export default function LandingPage() {
   const router = useRouter();
   const [hoveredRole, setHoveredRole] = useState<'admin' | 'candidate' | null>(null);
+  const [showCandidatePrompt, setShowCandidatePrompt] = useState(false);
+  const [candidateUrl, setCandidateUrl] = useState('');
 
   const handleSelect = (role: 'admin' | 'candidate') => {
     localStorage.setItem('userRole', role);
-    router.push(role === 'admin' ? '/admin/login' : '/candidate/login');
+    if (role === 'admin') {
+      router.push('/admin/login');
+    } else {
+      setShowCandidatePrompt(true);
+    }
+  };
+
+  const handleCandidateSubmit = () => {
+    if (candidateUrl) {
+      const profile = {
+        name: 'Candidate',
+        role: 'Software Engineer',
+        experience: 'Not specified',
+        skills: ['General IT'],
+        companyStyle: 'Big Tech',
+        resumeText: 'Direct entry via URL',
+      };
+      localStorage.setItem('interviewProfile', JSON.stringify(profile));
+      router.push('/interview/video');
+    } else {
+      router.push('/candidate/login');
+    }
   };
 
   return (
     <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
       <nav style={{ background: 'rgba(10,10,15,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', padding: '14px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, color: 'white' }}>AI</div>
-          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Interview <span style={{ color: 'var(--accent-cyan)' }}>Copilot</span></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src="/logo.png" alt="Interview Mate" style={{ height: 40, width: 'auto' }} />
         </div>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Intelligent Enterprise Recruitment</span>
       </nav>
@@ -126,6 +148,28 @@ export default function LandingPage() {
           Built by <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>Team RiftCoders</span> • SDS Hackathon 2026
         </p>
       </footer>
+
+      {/* Modal for Paste URL */}
+      {showCandidatePrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div className="glass-card" style={{ padding: 40, width: 440, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, textAlign: 'center' }}>Candidate Access</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center' }}>Paste the interview link provided by your admin below to start directly, or continue to setup manually.</p>
+            <input 
+              className="input-field" 
+              placeholder="Paste Interview URL here..." 
+              value={candidateUrl} 
+              onChange={e => setCandidateUrl(e.target.value)} 
+              style={{ width: '100%', padding: 12 }}
+            />
+            <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+              <button className="btn-secondary" onClick={() => router.push('/candidate/login')} style={{ flex: 1, padding: 12 }}>Manual Setup</button>
+              <button className="btn-primary" onClick={handleCandidateSubmit} style={{ flex: 1, padding: 12 }}>🚀 Start Interview</button>
+            </div>
+            <button onClick={() => setShowCandidatePrompt(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginTop: 10 }}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

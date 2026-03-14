@@ -25,9 +25,8 @@ export default function RegisterPage() {
       <div style={{ position: 'fixed', bottom: '20%', right: '20%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,70,229,0.06), transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
 
       <div className="glass-card animate-slide-up" style={{ width: '100%', maxWidth: 440, padding: '48px 40px' }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 36, justifyContent: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 20, color: 'white' }}>AI</div>
-          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Interview <span style={{ color: 'var(--accent-cyan)' }}>Copilot</span></span>
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36, justifyContent: 'center' }}>
+          <img src="/logo.png" alt="Interview Mate" style={{ height: 40, width: 'auto' }} />
         </Link>
 
         <h1 style={{ fontSize: 26, fontWeight: 800, textAlign: 'center', marginBottom: 8 }}>Create Account</h1>

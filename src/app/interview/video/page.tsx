@@ -24,6 +24,9 @@ export default function VideoInterviewPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const analysisIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+
+  const [hasScreenShare, setHasScreenShare] = useState(false);
 
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [round, setRound] = useState<InterviewRound>('intro');
@@ -38,6 +41,7 @@ export default function VideoInterviewPage() {
   const [questionTimer, setQuestionTimer] = useState(0);
   const [currentExpectedTopics, setCurrentExpectedTopics] = useState<string[]>([]);
   const [currentDifficulty, setCurrentDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [enableFillers, setEnableFillers] = useState(true);
 
   // Video/Audio
   const [cameraOn, setCameraOn] = useState(true);
@@ -55,52 +59,111 @@ export default function VideoInterviewPage() {
   const [frameHistory, setFrameHistory] = useState<FaceMetrics[]>([]);
   const [fillerCount, setFillerCount] = useState(0);
   const [showAiPanel, setShowAiPanel] = useState(true);
-
   const totalQ = getTotalQuestions();
+
+  const [violationCount, setViolationCount] = useState(0);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const violationCountRef = useRef(0);
+  const lastViolationTimeRef = useRef(0);
+  const lookAwayCountRef = useRef(0);
 
   // Load face-api models
   useEffect(() => {
     loadFaceModels().then(ok => setModelsReady(ok));
   }, []);
 
+  // Pre-load voices for SpeechSynthesis to ensure they are available immediately
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
   // Initialize camera
   useEffect(() => {
     let stream: MediaStream | null = null;
+    let isActive = false;
     const initCamera = async () => {
+      if (!hasScreenShare) return;
+      isActive = true;
       try {
+        // Try getting both video and audio first
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch {
-        setCameraError('Camera access denied. Please enable camera permissions.');
+        if (isActive && videoRef.current) videoRef.current.srcObject = stream;
+        if (isActive) setCameraError('');
+      } catch (err: any) {
+        if (!isActive) return;
+        console.warn("Failed to get both video and audio, trying fallbacks...", err);
+        try {
+          // Fallback 1: Try video only (maybe mic is missing or blocked)
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (videoRef.current) videoRef.current.srcObject = stream;
+          setMicOn(false);
+          setCameraError('');
+        } catch (vidErr: any) {
+          if (!isActive) return;
+          try {
+            // Fallback 2: Try audio only (maybe camera is missing or blocked)
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (videoRef.current) videoRef.current.srcObject = stream;
+            setCameraOn(false);
+            setCameraError('');
+          } catch (audErr: any) {
+            if (!isActive) return;
+            // All options failed
+            console.error("Complete media access failure:", err, vidErr, audErr);
+            setCameraError(`Access error: ${err.message || 'Permissions denied or no hardware found.'} Please check browser settings.`);
+          }
+        }
       }
     };
     initCamera();
-    return () => { stream?.getTracks().forEach(t => t.stop()); };
-  }, []);
+    return () => { 
+      isActive = false;
+      stream?.getTracks().forEach((t: MediaStreamTrack) => t.stop()); 
+    };
+  }, [hasScreenShare]);
 
   // Start face analysis loop when models are ready
   useEffect(() => {
-    if (!modelsReady || !videoRef.current || cameraError) return;
+    if (!hasScreenShare || !modelsReady || !videoRef.current || cameraError) {
+       return;
+    }
 
-    analysisIntervalRef.current = setInterval(async () => {
+    // Capture the current ref value so the cleanup function has access to the same value
+    const intervalRef = analysisIntervalRef;
+
+    intervalRef.current = setInterval(async () => {
       if (!videoRef.current || !cameraOn || isComplete) return;
       const metrics = await analyzeFrame(videoRef.current);
       if (metrics) {
         setLiveMetrics(metrics);
         setFrameHistory(prev => [...prev, metrics]);
+        
+        if (metrics.lookingAway) {
+          lookAwayCountRef.current += 1;
+        }
+
+        if (lookAwayCountRef.current > 10) {
+          handleLookAwayViolation();
+        }
       }
     }, 1500); // Analyze every 1.5 seconds
 
     return () => {
-      if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [modelsReady, cameraOn, cameraError, isComplete]);
+  }, [hasScreenShare, modelsReady, cameraOn, cameraError, isComplete]); // intentional omit of handleLookAwayViolation to prevent retriggering
 
   // Update filler count from transcript
   useEffect(() => {
+    if (!enableFillers) return;
     const { count } = countFillers(fullTranscript);
     setFillerCount(count);
-  }, [fullTranscript]);
+  }, [fullTranscript, enableFillers]);
 
   // Speech Recognition
   useEffect(() => {
@@ -130,15 +193,39 @@ export default function VideoInterviewPage() {
       recognition.onerror = () => setIsListening(false);
       recognition.onend = () => setIsListening(false);
       recognitionRef.current = recognition;
+      
+      // Cleanup on unmount
+      return () => {
+        try {
+          recognition.stop();
+        } catch(e) {}
+      };
     }
   }, []);
 
   const speakText = useCallback((text: string) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
+    
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    
+    // Select a male voice
+    const voices = window.speechSynthesis.getVoices();
+    const maleVoice = voices.find(v => 
+      (v.name.toLowerCase().includes('male') && !v.name.toLowerCase().includes('female')) || 
+      v.name.toLowerCase().includes('mark') || 
+      v.name.toLowerCase().includes('david') || 
+      v.name.toLowerCase().includes('brian') ||
+      v.name.toLowerCase().includes('guy') ||
+      v.name.toLowerCase().includes('matthew')
+    );
+    
+    if (maleVoice) {
+      utterance.voice = maleVoice;
+    }
+
+    utterance.rate = 1; // slightly faster/normal 
+    utterance.pitch = 0.9; // Slightly lower pitch for a younger male voice
     utterance.volume = 0.8;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -146,15 +233,29 @@ export default function VideoInterviewPage() {
   }, []);
 
   const toggleListening = () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current || isSpeaking) return;
+    
     if (isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.warn('Speech recognition stop error', e);
+      }
       setIsListening(false);
     } else {
       setTranscript('');
       setInterimTranscript('');
-      recognitionRef.current.start();
-      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error: any) {
+        if (error.name === 'InvalidStateError') {
+          console.warn('Speech recognition already started.');
+          setIsListening(true); // Ensure UI reflects it's actually running
+        } else {
+          console.error('Speech recognition error:', error);
+        }
+      }
     }
   };
 
@@ -174,41 +275,214 @@ export default function VideoInterviewPage() {
     }
   };
 
-  // Load profile and start interview
-  useEffect(() => {
-    const saved = localStorage.getItem('interviewProfile');
-    if (!saved) { router.push('/interview/setup'); return; }
-    const p = JSON.parse(saved) as CandidateProfile;
-    setProfile(p);
+  const handleRepeatQuestion = () => {
+    const reversed = [...messages].reverse();
+    const lastQuestionMsg = reversed.find(m => m.role === 'ai' && m.difficulty);
+    if (lastQuestionMsg) {
+      speakText(lastQuestionMsg.content);
+    } else {
+      const firstAiMsg = messages.find(m => m.role === 'ai');
+      if (firstAiMsg) speakText(firstAiMsg.content);
+    }
+  };
 
-    const welcomeMsg: Message = {
-      id: crypto.randomUUID(), role: 'ai',
-      content: `Welcome to your AI Video Interview, ${p.name}! 🎥\n\nI'm your AI interviewer for the **${p.role}** position (${p.companyStyle} style).\n\n• 🧠 AI will analyze your facial expressions in real-time\n• 🗣️ Your speech will be evaluated for clarity & fillers\n• 📊 Check the AI Dashboard panel for live metrics\n\nClick 🎤 to record your answers. Let's begin!`,
+  const handleViolation = useCallback(() => {
+    if (isComplete || !hasScreenShare) return;
+    
+    // Prevent rapid double triggers within 2 seconds
+    const now = Date.now();
+    if (now - lastViolationTimeRef.current < 2000) return;
+    lastViolationTimeRef.current = now;
+    
+    violationCountRef.current += 1;
+    const count = violationCountRef.current;
+    
+    if (count <= 3) {
+      setViolationCount(count);
+      setShowWarningModal(true);
+    } else {
+      // 4th violation
+      setIsComplete(true);
+      setViolationCount(count);
+      setShowWarningModal(false);
+      
+      const rejectedResult = {
+        candidateProfile: profile,
+        overallScore: 0,
+        scores: scores,
+        technicalAvg: 0,
+        communicationAvg: 0,
+        problemSolvingAvg: 0,
+        strengths: [],
+        improvements: ["Candidate rejected due to multiple tab switching violations."],
+        behavioralReport: {
+          overallScore: 0,
+          technicalScore: 0,
+          communicationScore: 0,
+          confidenceScore: 0,
+          behaviorScore: 0,
+          strengths: [],
+          improvements: [],
+          recommendation: "Rejected (Anti-Cheating Violation)",
+        },
+        videoMetrics: { emotions: {}, distractions: 4, averageFocus: 0 },
+        speechMetrics: { wpm: 0, fillerWords: fillerCount, sentiment: 0, clarity: 0 },
+        interviewType: 'video',
+        duration: Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
+        timestamp: new Date().toISOString(),
+        rejected: true,
+        transcript: fullTranscript
+      };
+      
+      const historyStr = localStorage.getItem('interviewHistory');
+      const history = historyStr ? JSON.parse(historyStr) : [];
+      history.unshift(rejectedResult);
+      localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+
+      const completeMsg: Message = {
+        id: crypto.randomUUID(), role: 'system',
+        content: `🚨 **INTERVIEW TERMINATED** 🚨\n\nCandidate behavior deemed suspicious. You have switched tabs or applications multiple times. The interview is now rejected.`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, completeMsg]);
+      speakText('Attention. Due to multiple tab switching violations, this interview has been terminated and your application is rejected.');
+      
+      const stream = videoRef.current?.srcObject as MediaStream;
+      stream?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+    }
+  }, [hasScreenShare, isComplete, speakText, profile, scores, fullTranscript, fillerCount, startTime]);
+
+  const handleLookAwayViolation = useCallback(() => {
+    if (isComplete || !hasScreenShare) return;
+    setIsComplete(true);
+    setShowWarningModal(false);
+    
+    const count = lookAwayCountRef.current;
+    
+    const rejectedResult = {
+      candidateProfile: profile,
+      overallScore: 0,
+      scores: scores,
+      technicalAvg: 0,
+      communicationAvg: 0,
+      problemSolvingAvg: 0,
+      strengths: [],
+      improvements: ["Candidate rejected due to multiple look away violations."],
+      behavioralReport: {
+        overallScore: 0,
+        technicalScore: 0,
+        communicationScore: 0,
+        confidenceScore: 0,
+        behaviorScore: 0,
+        strengths: [],
+        improvements: [],
+        recommendation: "Rejected (Distracted/Disobeying Rules)",
+      },
+      videoMetrics: { emotions: {}, distractions: count, averageFocus: 0 },
+      speechMetrics: { wpm: 0, fillerWords: fillerCount, sentiment: 0, clarity: 0 },
+      interviewType: 'video',
+      duration: Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
+      timestamp: new Date().toISOString(),
+      rejected: true,
+      transcript: fullTranscript
+    };
+    
+    const historyStr = localStorage.getItem('interviewHistory');
+    const history = historyStr ? JSON.parse(historyStr) : [];
+    history.unshift(rejectedResult);
+    localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+
+    const completeMsg: Message = {
+      id: crypto.randomUUID(), role: 'system',
+      content: `🚨 **INTERVIEW TERMINATED** 🚨\n\nCandidate is distracted and is disobeying the rules. The interview is now rejected.`,
       timestamp: new Date(),
     };
-    setTimeout(() => {
-      setMessages([welcomeMsg]);
-      speakText(`Welcome to your AI video interview, ${p.name}! I'll ask you questions for the ${p.role} position. Let's begin.`);
-      setTimeout(() => askQuestion(p, 'intro', 0), 4000);
-    }, 1000);
+    setMessages(prev => [...prev, completeMsg]);
+    speakText('Attention. Candidate is distracted and is disobeying the rules. This interview has been terminated and your application is rejected.');
+    
+    const stream = videoRef.current?.srcObject as MediaStream;
+    stream?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
+  }, [hasScreenShare, isComplete, speakText, profile, scores, fullTranscript, fillerCount, startTime]);
+
+  useEffect(() => {
+    if (!hasScreenShare || isComplete) return;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleViolation();
+      }
+    };
+
+    const onBlur = () => {
+      handleViolation();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [hasScreenShare, isComplete, handleViolation]);
+
+  // Load profile and start interview
+  useEffect(() => {
+    let isActive = false;
+    if (hasScreenShare) {
+      isActive = true;
+      const saved = localStorage.getItem('interviewProfile');
+      if (!saved) { router.push('/interview/setup'); return; }
+      
+      const savedAdminSettings = localStorage.getItem('adminSettings');
+      if (savedAdminSettings) {
+        try {
+          const parsedAdmin = JSON.parse(savedAdminSettings);
+          if (parsedAdmin.enableFillerAnalysis !== undefined) {
+            setEnableFillers(parsedAdmin.enableFillerAnalysis);
+          }
+        } catch (e) {
+          console.error("Failed to parse adminSettings", e);
+        }
+      }
+
+      const p = JSON.parse(saved) as CandidateProfile;
+      setProfile(p);
+
+      const welcomeMsg: Message = {
+        id: crypto.randomUUID(), role: 'ai',
+        content: `Welcome to your AI Video Interview, ${p.name}! 🎥\n\nI'm your AI interviewer for the **${p.role}** position (${p.companyStyle} style).\n\n• 🧠 AI will analyze your facial expressions in real-time\n• 🗣️ Your speech will be evaluated for clarity & fillers\n• 📊 Check the AI Dashboard panel for live metrics\n\nClick 🎤 to record your answers. Let's begin!`,
+        timestamp: new Date(),
+      };
+      setTimeout(() => {
+        if (!isActive) return;
+        setMessages([welcomeMsg]);
+        speakText(`Welcome to your AI video interview, ${p.name}! I'll ask you questions for the ${p.role} position. Let's begin.`);
+        setTimeout(() => { if (isActive) askQuestion(p, 'intro', 0); }, 4000);
+      }, 1000);
+    }
+    
+    return () => { isActive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasScreenShare]);
 
   // Timer
   useEffect(() => {
-    if (isComplete) return;
+    if (!hasScreenShare || isComplete) return;
     const interval = setInterval(() => setQuestionTimer(prev => prev + 1), 1000);
     return () => clearInterval(interval);
-  }, [isComplete]);
+  }, [hasScreenShare, isComplete]);
 
   // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const askQuestion = (p: CandidateProfile, r: InterviewRound, rqIdx: number) => {
+  const askQuestion = async (p: CandidateProfile, r: InterviewRound, rqIdx: number) => {
     setIsTyping(true);
-    const generated = generateQuestion(p, r, rqIdx);
+    const generated = await generateQuestion(p, r, rqIdx);
     setTimeout(() => {
       const msg: Message = {
         id: crypto.randomUUID(), role: 'ai',
@@ -318,6 +592,8 @@ export default function VideoInterviewPage() {
       speechMetrics: sessionSpeech,
       interviewType: 'video',
       duration: elapsed,
+      transcript: fullTranscript,
+      timestamp: new Date().toISOString()
     };
     localStorage.setItem('lastInterviewResult', JSON.stringify(enhancedResult));
 
@@ -336,6 +612,7 @@ export default function VideoInterviewPage() {
 
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
   };
 
   const formatTime = (seconds: number) => {
@@ -370,8 +647,96 @@ export default function VideoInterviewPage() {
     );
   };
 
+  if (!hasScreenShare) {
+    return (
+      <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="glass-card" style={{ maxWidth: 500, width: '100%', padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>🖥️</div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)' }}>Screen Share Required</h2>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
+            Before starting the interview, you must share your screen with system audio to ensure a secure and monitored environment. The interview will begin directly with your camera automatically turned on.
+          </p>
+          <button 
+            className="btn-primary" 
+            style={{ padding: '14px 24px', fontSize: 16, width: '100%' }}
+            onClick={async () => {
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          displaySurface: 'monitor',
+          // @ts-ignore
+          logicalSurface: false,
+          surfaceSwitching: 'exclude',
+          systemAudio: 'include'
+        },
+        audio: true
+      });
+
+      const videoTrack = stream.getVideoTracks()[0];
+      const settings = videoTrack.getSettings();
+
+      if (settings.displaySurface !== 'monitor') {
+        videoTrack.stop();
+        stream.getTracks().forEach(t => t.stop());
+        alert("You must select 'Entire Screen' to proceed. Sharing a tab or window is not allowed.");
+        return;
+      }
+      
+      // Attempt to enforce audio if possible (note: macOS sometimes doesn't support system audio without special drivers)
+      if (stream.getAudioTracks().length === 0) {
+        // We will just log a warning instead of blocking completely because some OS might not support it
+        console.warn("System audio was not shared.");
+      }
+                screenStreamRef.current = stream;
+                // Add a listener in case they stop sharing via the browser's default UI button
+                videoTrack.onended = () => {
+                  setHasScreenShare(false);
+                };
+
+                setHasScreenShare(true);
+              } catch (err: any) {
+                console.error("Screen Share Error:", err);
+                alert('Screen sharing is required to proceed. Please try again and ensure you select "Entire Screen" and share system audio.');
+              }
+            }}
+          >
+            Share Screen & Start
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: 'var(--bg-primary)', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div className="glass-card" style={{ maxWidth: 450, padding: 32, textAlign: 'center', border: '1px solid var(--accent-red)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Warning</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+              Navigating away from the interview tab or opening other applications is NOT allowed. 
+              <br /><br />
+              This is violation <strong>{violationCount} of 3</strong>. On the 4th violation, your interview will be immediately terminated and rejected.
+            </p>
+            <button 
+              onClick={() => setShowWarningModal(false)}
+              className="btn-primary" 
+              style={{ background: 'var(--accent-red)', border: 'none', padding: '10px 24px', fontSize: 16 }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)',
@@ -379,7 +744,7 @@ export default function VideoInterviewPage() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: 'white' }}>AI</div>
+          <img src="/logo.png" alt="Interview Mate" style={{ height: 32, width: 'auto' }} />
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
               AI Video Interview
@@ -445,16 +810,27 @@ export default function VideoInterviewPage() {
                 🔊 AI Speaking
               </div>
             )}
+            <button 
+              onClick={() => {
+                if(profile && window.confirm("Are you sure you want to end the interview?")) {
+                  finishInterview(profile, scores);
+                }
+              }}
+              style={{
+                position: 'absolute', bottom: 8, right: 8, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--accent-red)', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', zIndex: 10
+              }}>
+              End Interview
+            </button>
             {/* Live emotion badge */}
             {liveMetrics?.faceDetected && (
-              <div style={{ position: 'absolute', bottom: 8, left: 8, padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', fontSize: 10, color: 'var(--text-primary)', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <div style={{ position: 'absolute', bottom: 42, left: 8, padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', fontSize: 10, color: 'var(--text-primary)', display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span>{liveMetrics.emotions.dominant === 'happy' ? '😊' : liveMetrics.emotions.dominant === 'neutral' ? '😐' : liveMetrics.emotions.dominant === 'surprised' ? '😮' : liveMetrics.emotions.dominant === 'sad' ? '😢' : '🤔'}</span>
                 <span style={{ fontWeight: 600 }}>{liveMetrics.emotions.dominant}</span>
                 {liveMetrics.lookingAway && <span style={{ color: 'var(--accent-red)' }}>⚠ Away</span>}
               </div>
             )}
             {liveMetrics?.faceDetected && (
-              <div style={{ position: 'absolute', bottom: 8, right: 8, padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', fontSize: 10 }}>
+              <div style={{ position: 'absolute', bottom: 8, left: 8, padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', fontSize: 10 }}>
                 <span style={{ color: liveMetrics.eyeContact >= 60 ? 'var(--accent-green)' : 'var(--accent-amber)' }}>
                   👁 {Math.round(liveMetrics.eyeContact)}%
                 </span>
@@ -480,12 +856,19 @@ export default function VideoInterviewPage() {
             }}>
               {micOn ? '🎤' : '🔇'}
             </button>
-            <button onClick={() => { if (!isComplete) window.speechSynthesis.cancel(); }} style={{
+            <button onClick={() => { if (!isComplete) window.speechSynthesis.cancel(); }} title="Stop Agent Speaking" style={{
               width: 42, height: 42, borderRadius: '50%', border: 'none', cursor: 'pointer',
               background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)',
               fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               ⏹️
+            </button>
+            <button onClick={handleRepeatQuestion} title="Repeat AI Question" style={{
+              width: 42, height: 42, borderRadius: '50%', border: 'none', cursor: 'pointer',
+              background: 'rgba(79,70,229,0.15)', color: 'var(--accent-blue)',
+              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              🔁
             </button>
           </div>
 
@@ -494,7 +877,7 @@ export default function VideoInterviewPage() {
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               🎙️ Transcript
               {isListening && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-red)', animation: 'blink 1s infinite' }} />}
-              {fillerCount > 0 && <span style={{ color: 'var(--accent-amber)', fontSize: 10, marginLeft: 'auto' }}>⚠ {fillerCount} fillers</span>}
+              {enableFillers && fillerCount > 0 && <span style={{ color: 'var(--accent-amber)', fontSize: 10, marginLeft: 'auto' }}>⚠ {fillerCount} fillers</span>}
             </div>
             <div style={{ padding: 12, borderRadius: 8, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', minHeight: 60, fontSize: 13, lineHeight: 1.6 }}>
               {transcript || interimTranscript ? (
@@ -601,7 +984,9 @@ export default function VideoInterviewPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Fillers</span>
-                  <span style={{ fontWeight: 600, color: fillerCount > 10 ? 'var(--accent-red)' : fillerCount > 5 ? 'var(--accent-amber)' : 'var(--accent-green)' }}>{fillerCount}</span>
+                  <span style={{ fontWeight: 600, color: !enableFillers ? 'var(--text-muted)' : fillerCount > 10 ? 'var(--accent-red)' : fillerCount > 5 ? 'var(--accent-amber)' : 'var(--accent-green)' }}>
+                    {enableFillers ? fillerCount : 'Off'}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Frames Analyzed</span>
@@ -622,7 +1007,7 @@ export default function VideoInterviewPage() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
             {messages.map(msg => (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
+              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : (msg.role === 'system' ? 'center' : 'flex-start'), marginBottom: 12 }}>
                 <div style={{ maxWidth: '85%' }}>
                   {msg.category && (
                     <div style={{ fontSize: 10, marginBottom: 4, display: 'flex', gap: 4 }}>
@@ -630,10 +1015,10 @@ export default function VideoInterviewPage() {
                       {msg.difficulty && <span className={`tag ${msg.difficulty === 'hard' ? 'tag-amber' : msg.difficulty === 'medium' ? 'tag-cyan' : 'tag-green'}`} style={{ padding: '2px 6px', fontSize: 9 }}>{msg.difficulty}</span>}
                     </div>
                   )}
-                  <div className={msg.role === 'ai' ? 'chat-ai' : 'chat-user'} style={{ padding: '12px 16px' }}>
+                  <div className={msg.role === 'ai' ? 'chat-ai' : (msg.role === 'user' ? 'chat-user' : '')} style={{ padding: '12px 16px', border: msg.role === 'system' ? '1px solid var(--accent-amber)' : 'none', borderRadius: 12, background: msg.role === 'system' ? 'rgba(245, 158, 11, 0.1)' : '' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: msg.role === 'ai' ? 'var(--accent-cyan)' : 'var(--accent-blue)' }}>
-                        {msg.role === 'ai' ? '🤖 AI' : '🎤 You'}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: msg.role === 'ai' ? 'var(--accent-cyan)' : (msg.role === 'user' ? 'var(--accent-blue)' : 'var(--accent-amber)') }}>
+                        {msg.role === 'ai' ? '🤖 AI' : (msg.role === 'user' ? '🎤 You' : '⚠️ System Alert')}
                       </span>
                     </div>
                     <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>

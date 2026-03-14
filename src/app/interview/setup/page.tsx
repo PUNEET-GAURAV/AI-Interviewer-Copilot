@@ -10,12 +10,6 @@ const ROLES = [
   'Mobile Developer', 'ML Engineer', 'Security Engineer',
 ];
 
-const COMPANY_STYLES = [
-  { value: 'FAANG', label: '🏢 FAANG', desc: 'Algorithmic & System Design focus' },
-  { value: 'Startup', label: '🚀 Startup', desc: 'Practical & Product thinking' },
-  { value: 'Enterprise', label: '🏛️ Enterprise', desc: 'Process & Domain expertise' },
-];
-
 const DIFFICULTIES = [
   { value: 'easy', label: 'Junior', desc: 'Entry-level questions', icon: '🌱' },
   { value: 'medium', label: 'Mid-Level', desc: 'Balanced difficulty', icon: '⚡' },
@@ -29,8 +23,6 @@ export default function InterviewSetupPage() {
   const [difficulty, setDifficulty] = useState('medium');
   const [interviewMode, setInterviewMode] = useState<'text' | 'video'>('text');
   const [resumeText, setResumeText] = useState('');
-  const [skills, setSkills] = useState('');
-  const [experience, setExperience] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -52,15 +44,15 @@ export default function InterviewSetupPage() {
   };
 
   const handleStart = () => {
-    if (!role || !companyStyle) return;
+    if (!role) return;
     setIsLoading(true);
 
     const profile = {
       name: name || 'Candidate',
       role,
-      experience: experience || '2 years',
-      skills: skills ? skills.split(',').map(s => s.trim()) : [],
-      companyStyle,
+      experience: 'Mid-Level', // Default now that it's removed from UI
+      skills: [], // Defaults to empty
+      companyStyle: 'Enterprise', // Default to enterprise rigor
       resumeText,
     };
 
@@ -72,15 +64,14 @@ export default function InterviewSetupPage() {
     }, 600);
   };
 
-  const isReady = role && companyStyle;
+  const isReady = role;
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
       {/* Nav */}
       <nav style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: 'white' }}>AI</div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>Interview <span style={{ color: 'var(--accent-cyan)' }}>Copilot</span></span>
+        <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src="/logo.png" alt="Interview Mate" style={{ height: 32, width: 'auto' }} />
         </Link>
         <Link href="/dashboard" style={{ fontSize: 14, color: 'var(--text-secondary)', textDecoration: 'none' }}>← Back to Dashboard</Link>
       </nav>
@@ -164,36 +155,6 @@ export default function InterviewSetupPage() {
               <option value="">Select a role...</option>
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-          </div>
-
-          {/* Skills */}
-          <div className="glass-card" style={{ padding: 28 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>🛠️ Key Skills</h3>
-            <input className="input-field" placeholder="e.g., Python, AWS, Docker, PostgreSQL (comma-separated)" value={skills} onChange={e => setSkills(e.target.value)} />
-          </div>
-
-          {/* Experience */}
-          <div className="glass-card" style={{ padding: 28 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>📅 Experience</h3>
-            <input className="input-field" placeholder="e.g., 3 years" value={experience} onChange={e => setExperience(e.target.value)} />
-          </div>
-
-          {/* Company Style */}
-          <div className="glass-card" style={{ padding: 28 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>🏢 Company Style *</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              {COMPANY_STYLES.map(cs => (
-                <button key={cs.value} type="button" onClick={() => setCompanyStyle(cs.value)} style={{
-                  padding: 20, borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.3s ease', fontFamily: 'Inter, sans-serif',
-                  background: companyStyle === cs.value ? 'linear-gradient(135deg, rgba(0,212,255,0.1), rgba(79,70,229,0.1))' : 'var(--bg-secondary)',
-                  border: companyStyle === cs.value ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: companyStyle === cs.value ? 'var(--accent-cyan)' : 'var(--text-primary)', marginBottom: 4 }}>{cs.label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cs.desc}</div>
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Difficulty */}

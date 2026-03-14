@@ -6,18 +6,34 @@ import { useRouter } from 'next/navigation';
 
 export default function CandidateLoginPage() {
   const router = useRouter();
-  const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [interviewUrl, setInterviewUrl] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || (isRegister && !name)) { setError('Please fill all fields'); return; }
-    localStorage.setItem('user', JSON.stringify({ email, name: name || email.split('@')[0], role: 'candidate' }));
-    localStorage.setItem('userRole', 'candidate');
-    router.push('/candidate/profile');
+    if (!name || !email || !interviewUrl) { 
+      setError('Please fill all fields'); 
+      return; 
+    }
+    
+    try {
+      // Validate it's a URL or path
+      if (!interviewUrl.includes('/candidate/interview/')) {
+         setError('Please enter a valid interview link');
+         return;
+      }
+      
+      const urlObj = new URL(interviewUrl, window.location.origin);
+      const targetPath = urlObj.pathname + urlObj.search + urlObj.hash;
+
+      localStorage.setItem('user', JSON.stringify({ email, name, role: 'candidate' }));
+      localStorage.setItem('userRole', 'candidate');
+      router.push(targetPath);
+    } catch {
+       setError('Invalid URL format');
+    }
   };
 
   return (
@@ -28,43 +44,36 @@ export default function CandidateLoginPage() {
           <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Candidate <span style={{ color: 'var(--accent-cyan)' }}>Portal</span></span>
         </Link>
 
-        <h2 style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', marginBottom: 4 }}>{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', marginBottom: 4 }}>Access Interview</h2>
         <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
-          {isRegister ? 'Set up your candidate profile' : 'Sign in to continue your journey'}
+          Enter your details and the link provided by your recruiter
         </p>
 
         {error && <div style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {isRegister && (
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Full Name</label>
-              <input className="input-field" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} />
-            </div>
-          )}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Full Name</label>
+            <input className="input-field" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} />
+          </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Email</label>
             <input className="input-field" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Password</label>
-            <input className="input-field" type="password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} />
+            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Interview Link</label>
+            <input className="input-field" type="url" placeholder="https://.../candidate/interview/..." value={interviewUrl} onChange={e => setInterviewUrl(e.target.value)} />
           </div>
           <button type="submit" className="btn-primary" style={{ width: '100%', padding: 16, fontSize: 16, marginTop: 8 }}>
-            {isRegister ? '🚀 Create Account' : '👤 Sign In'}
+            🚀 Start Interview
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
-          {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button onClick={() => { setIsRegister(!isRegister); setError(''); }} style={{ color: 'var(--accent-cyan)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter' }}>
-            {isRegister ? 'Sign In' : 'Register'}
-          </button>
-        </p>
-        <p style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-          <Link href="/admin/login" style={{ color: 'var(--accent-blue)', textDecoration: 'none' }}>Sign in as Admin →</Link>
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: 'var(--text-muted)' }}>
+          <Link href="/admin/login" style={{ color: 'var(--accent-blue)', textDecoration: 'none' }}>Admin Login →</Link>
         </p>
       </div>
     </div>
   );
 }
+

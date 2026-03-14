@@ -4,7 +4,7 @@ export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
 export interface Message {
   id: string;
-  role: 'ai' | 'user';
+  role: 'ai' | 'user' | 'system';
   content: string;
   timestamp: Date;
   category?: string;
@@ -41,6 +41,8 @@ export interface CandidateProfile {
   skills: string[];
   companyStyle: string;
   resumeText: string;
+  resumeFile?: string;
+  certificateFiles?: string[];
 }
 
 export interface InterviewResult {

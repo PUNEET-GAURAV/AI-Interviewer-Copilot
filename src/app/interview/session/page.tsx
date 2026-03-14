@@ -69,9 +69,9 @@ export default function InterviewSessionPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const askQuestion = (p: CandidateProfile, r: InterviewRound, rqIdx: number) => {
+  const askQuestion = async (p: CandidateProfile, r: InterviewRound, rqIdx: number) => {
     setIsTyping(true);
-    const generated = generateQuestion(p, r, rqIdx);
+    const generated = await generateQuestion(p, r, rqIdx);
 
     setTimeout(() => {
       const roundConfig = getRoundConfig(r);
@@ -209,7 +209,7 @@ export default function InterviewSessionPage() {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: 'white' }}>AI</div>
+          <img src="/logo.png" alt="Interview Mate" style={{ height: 32, width: 'auto' }} />
           <div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>Interview Session</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.role || 'Loading...'} • {profile?.companyStyle || ''} Style</div>

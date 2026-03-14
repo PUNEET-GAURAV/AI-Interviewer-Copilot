@@ -1,0 +1,30 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "[\n  {\n    \"question\": \"So, at an enterprise like ours, we frequently deal with integrating new services with older, sometimes less reliable, external systems. Let's say you're tasked with building a brand new backend service that absolutely needs to consume data from one of these legacy systems that occasionally experiences downtime or slow responses. How would you design your service's API and the integration layer to ensure our system remains resilient, provides a consistent experience to its consumers, and maintains data integrity, even when that external system is misbehaving?\",\n    \"category\": \"System Design\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"Idempotency\",\n      \"Retry strategies\",\n      \"Circuit breakers\",\n      \"Graceful degradation\",\n      \"Error handling\",\n      \"API contracts\",\n      \"Message queues\",\n      \"Eventual consistency\"\n    ]\n  },\n  {\n    \"question\": \"Another common challenge in a large-scale environment is dealing with performance under load. Imagine you've just rolled out a new backend service that's responsible for processing critical business transactions. After a few days, during peak usage, you start seeing alerts for database deadlocks and some API requests timing out. As the engineer responsible, walk me through your initial approach to diagnose this kind of problem. What are the first few things you'd investigate, and what are some common strategies you'd consider to address these types of performance bottlenecks?\",\n    \"category\": \"Troubleshooting & Performance\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"Monitoring (logs, APM, database metrics)\",\n      \"Query optimization\",\n      \"Indexing\",\n      \"Transaction management\",\n      \"Connection pooling\",\n      \"Caching strategies\",\n      \"Load balancing\",\n      \"Asynchronous processing\",\n      \"Resource contention\"\n    ]\n  }\n]"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 267,
+    "candidatesTokenCount": 406,
+    "totalTokenCount": 1777,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 267
+      }
+    ],
+    "thoughtsTokenCount": 1104
+  },
+  "modelVersion": "gemini-2.5-flash",
+  "responseId": "mq61aZumCYKy4-EPxqy_0As"
+}
