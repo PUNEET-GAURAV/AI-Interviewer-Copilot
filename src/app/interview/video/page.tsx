@@ -897,6 +897,12 @@ export default function VideoInterviewPage() {
                 {peerId ? <QRCodeSVG value={pairingUrl} size={160} /> : <div style={{width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000'}}>Loading...</div>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Waiting for connection...</div>
+              <button 
+                onClick={() => setMobileConnected(true)}
+                style={{ marginTop: 16, background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}
+              >
+                Skip Dual Camera →
+              </button>
             </div>
           ) : (
             <div style={{ marginBottom: 32, padding: 16, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--accent-green)', borderRadius: 12 }}>
