@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "[\n  {\n    \"question\": \"Thanks for coming in today. To start, could you share a bit about what specifically attracted you to a Nutrition Consultant role, particularly within an enterprise organization like ours, and what you believe makes this type of environment unique for a nutrition professional?\",\n    \"category\": \"Motivation & Role Understanding\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"career motivation\",\n      \"understanding enterprise context\",\n      \"nutrition consulting role\"\n    ]\n  },\n  {\n    \"question\": \"When you think about working with clients, how do you typically begin to assess their individual nutritional needs, and what's your initial approach to helping them define achievable health goals?\",\n    \"category\": \"Client Assessment & Goal Setting\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"client needs assessment\",\n      \"goal setting\",\n      \"client communication\"\n    ]\n  },\n  {\n    \"question\": \"We noticed 'General IT' listed in your skills. In an enterprise environment, technology often plays a significant role. How do you envision leveraging general IT tools or digital platforms to enhance your work as a Nutrition Consultant, perhaps in terms of client management, education, or data tracking?\",\n    \"category\": \"Technology Integration & Vision\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"technology in nutrition\",\n      \"digital tools\",\n      \"client management systems\",\n      \"data tracking\"\n    ]\n  }\n]"
+            "text": "[\n  {\n    \"question\": \"Thanks for coming in today! To start, could you tell me a bit about what initially drew you to the field of software engineering, and what specifically excites you about the prospect of working at a large tech company like ours?\",\n    \"category\": \"Behavioral\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"Career motivation\", \"Company interest\", \"Self-reflection\"]\n  },\n  {\n    \"question\": \"Given your background in General IT, you've likely encountered various technical issues. Could you share a straightforward technical problem you've faced – it could be anything from a networking glitch to a software configuration issue – and walk me through how you approached diagnosing and ultimately resolving it? We're really interested in your logical thought process here.\",\n    \"category\": \"Problem Solving\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"Troubleshooting steps\", \"Logical reasoning\", \"Problem identification\", \"Basic debugging\"]\n  },\n  {\n    \"question\": \"In our industry, continuous learning is crucial. How do you typically go about learning a completely new programming language, a new development tool, or even a broad technical concept that you're unfamiliar with? What's your personal strategy for picking up new skills?\",\n    \"category\": \"Learning & Growth\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"Learning methodologies\", \"Resourcefulness\", \"Adaptability\", \"Initiative\"]\n  }\n]"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 3138,
-    "candidatesTokenCount": 331,
-    "totalTokenCount": 4428,
+    "promptTokenCount": 384,
+    "candidatesTokenCount": 319,
+    "totalTokenCount": 1610,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 3138
+        "tokenCount": 384
       }
     ],
-    "thoughtsTokenCount": 959
+    "thoughtsTokenCount": 907
   },
   "modelVersion": "gemini-2.5-flash",
-  "responseId": "d5K2acfyLYyqjuMP28ummQk"
+  "responseId": "JZi2aeOfL4LHpgfkl-uJCQ"
 }

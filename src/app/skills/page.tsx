@@ -129,7 +129,7 @@ export default function SkillsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="glass-card" style={{ padding: 20 }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Average</div>
-                <div className="gradient-text" style={{ fontSize: 28, fontWeight: 800 }}>{avgLevel}/10</div>
+                <div className="gradient-text" style={{ fontSize: 28, fontWeight: 800 }}>{Math.round(avgLevel * 10)}/100</div>
               </div>
               <div className="glass-card" style={{ padding: 20 }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Top Skill</div>
@@ -140,7 +140,7 @@ export default function SkillsPage() {
               <div key={sk.skill} className="glass-card-sm" style={{ padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{sk.skill}</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: sk.level >= 8 ? 'var(--accent-green)' : sk.level >= 6 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>{sk.level}/10</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: sk.level >= 8 ? 'var(--accent-green)' : sk.level >= 6 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>{Math.round(sk.level * 10)}/100</span>
                 </div>
                 <div className="progress-bar">
                   <div className="progress-bar-fill" style={{ width: `${sk.level * 10}%`, background: sk.level >= 8 ? 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))' : 'linear-gradient(90deg, var(--accent-amber), var(--accent-cyan))' }} />

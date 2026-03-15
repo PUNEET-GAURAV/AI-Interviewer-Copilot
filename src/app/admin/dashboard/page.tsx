@@ -225,7 +225,7 @@ export default function AdminDashboardPage() {
 
   const downloadReport = (h: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const content = `Interview Report - ${h.candidateProfile?.name || 'Anonymous'}\nRole: ${h.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(h.timestamp || Date.now()).toLocaleString()}\nOverall Score: ${h.overallScore}/100\nTechnical: ${h.technicalAvg} | Communication: ${h.communicationAvg} | Problem Solving: ${h.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${h.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/100 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${h.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${h.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
+    const content = `Interview Report - ${h.candidateProfile?.name || 'Anonymous'}\nRole: ${h.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(h.timestamp || Date.now()).toLocaleString()}\nOverall Score: ${Math.round(h.overallScore * 10)}/100\nTechnical: ${Math.round(h.technicalAvg * 10)}/100 | Communication: ${Math.round(h.communicationAvg * 10)}/100 | Problem Solving: ${Math.round(h.problemSolvingAvg * 10)}/100\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${h.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${Math.round(s.overall * 10)}/100 (Tech: ${Math.round(s.technicalDepth * 10)}, Clarity: ${Math.round(s.clarity * 10)})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${h.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${h.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -587,7 +587,7 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
               {[
                 { label: 'Total Interviews', val: analytics.total, icon: '📋', color: 'var(--accent-cyan)' },
-                { label: 'Avg Score', val: `${analytics.avgScore}/10`, icon: '📊', color: 'var(--accent-green)' },
+                { label: 'Avg Score', val: `${Math.round(analytics.avgScore * 10)}/100`, icon: '📊', color: 'var(--accent-green)' },
                 { label: 'Pass Rate', val: `${analytics.passRate}%`, icon: '✅', color: 'var(--accent-amber)' },
                 { label: 'Video Interviews', val: analytics.videoCount, icon: '🎥', color: 'var(--accent-blue)' },
               ].map(s => (
@@ -793,7 +793,7 @@ export default function AdminDashboardPage() {
                   ))}
                   <button 
                     onClick={() => {
-                      const content = `Interview Report - ${selectedCandidate.candidateProfile?.name || 'Anonymous'}\nRole: ${selectedCandidate.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(selectedCandidate.timestamp).toLocaleString()}\nOverall Score: ${selectedCandidate.overallScore}/10\nTechnical: ${selectedCandidate.technicalAvg} | Communication: ${selectedCandidate.communicationAvg} | Problem Solving: ${selectedCandidate.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${selectedCandidate.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/10 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${selectedCandidate.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${selectedCandidate.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
+                      const content = `Interview Report - ${selectedCandidate.candidateProfile?.name || 'Anonymous'}\nRole: ${selectedCandidate.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(selectedCandidate.timestamp).toLocaleString()}\nOverall Score: ${Math.round(selectedCandidate.overallScore * 10)}/100\nTechnical: ${Math.round(selectedCandidate.technicalAvg * 10)}/100 | Communication: ${Math.round(selectedCandidate.communicationAvg * 10)}/100 | Problem Solving: ${Math.round(selectedCandidate.problemSolvingAvg * 10)}/100\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${selectedCandidate.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${Math.round(s.overall * 10)}/100 (Tech: ${Math.round(s.technicalDepth * 10)}, Clarity: ${Math.round(s.clarity * 10)})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${selectedCandidate.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${selectedCandidate.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
                       const blob = new Blob([content], { type: 'text/plain' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -873,7 +873,7 @@ export default function AdminDashboardPage() {
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>Q: {s.question}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontStyle: 'italic', lineHeight: 1.4 }}>A: "{s.answer.slice(0, 150)}{s.answer.length > 150 ? '...' : ''}"</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: 'var(--accent-cyan)' }}>Score: {s.overall}/10</span>
+                      <span style={{ fontSize: 12, color: 'var(--accent-cyan)' }}>Score: {Math.round(s.overall * 10)}/100</span>
                       <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 6 }}>{s.feedback.slice(0, 50)}...</span>
                     </div>
                   </div>

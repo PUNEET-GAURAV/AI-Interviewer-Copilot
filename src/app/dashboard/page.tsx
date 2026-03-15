@@ -82,8 +82,8 @@ export default function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40 }}>
           {[
             { label: 'Interviews Taken', value: history.length.toString(), icon: '🎯', color: 'var(--accent-cyan)' },
-            { label: 'Average Score', value: `${avgScore}/10`, icon: '📊', color: 'var(--accent-green)' },
-            { label: 'Best Score', value: `${history.length ? Math.max(...history.map(h => h.overallScore || 0)) : 0}/10`, icon: '🏆', color: 'var(--accent-amber)' },
+            { label: 'Average Score', value: `${Math.round(avgScore * 10)}/100`, icon: '📊', color: 'var(--accent-green)' },
+            { label: 'Best Score', value: `${history.length ? Math.round(Math.max(...history.map(h => h.overallScore || 0)) * 10) : 0}/100`, icon: '🏆', color: 'var(--accent-amber)' },
             { label: 'Skill Areas', value: '6', icon: '🧩', color: 'var(--accent-blue)' },
           ].map(stat => (
             <div key={stat.label} className="glass-card" style={{ padding: 24, transition: 'all 0.3s ease', cursor: 'default' }}
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                       background: (item.overallScore || 0) >= 8 ? 'rgba(16,185,129,0.15)' : (item.overallScore || 0) >= 6 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
                       color: (item.overallScore || 0) >= 8 ? 'var(--accent-green)' : (item.overallScore || 0) >= 6 ? 'var(--accent-amber)' : 'var(--accent-red)',
                     }}>
-                      {item.overallScore}/10
+                      {Math.round((item.overallScore || 0) * 10)}/100
                     </div>
                   </div>
                 </div>

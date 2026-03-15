@@ -167,6 +167,7 @@ export default function VideoInterviewPage() {
       }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setCameraStream(stream);
         if (!isActive) { stream.getTracks().forEach(t => t.stop()); return; }
         cameraStreamRef.current = stream;
         setCameraStream(stream);
@@ -177,6 +178,7 @@ export default function VideoInterviewPage() {
         console.warn("Failed to get both video and audio, trying fallbacks...", err);
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setCameraStream(stream);
           if (!isActive) { stream.getTracks().forEach(t => t.stop()); return; }
           cameraStreamRef.current = stream;
           setCameraStream(stream);
@@ -696,7 +698,7 @@ export default function VideoInterviewPage() {
 
     const feedbackMsg: Message = {
       id: crypto.randomUUID(), role: 'ai',
-      content: `📊 **Score: ${score.overall}/10**\n${score.feedback}`,
+      content: `📊 **Score: ${Math.round(score.overall * 10)}/100**\n${score.feedback}`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, feedbackMsg]);
@@ -778,7 +780,7 @@ export default function VideoInterviewPage() {
     localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
     const completeMsg: Message = {
       id: crypto.randomUUID(), role: 'ai',
-      content: `🎉 **Interview Complete!**\n\n🏆 Overall Score: **${behavioralReport.overallScore}/10** — ${behavioralReport.recommendation}\n\n📊 Technical: ${behavioralReport.technicalScore}/10\n🗣️ Communication: ${behavioralReport.communicationScore}/10\n🎯 Confidence: ${behavioralReport.confidenceScore}/10\n🧠 Behavior: ${behavioralReport.behaviorScore}/10\n\n${behavioralReport.strengths.length > 0 ? '**Strengths:** ' + behavioralReport.strengths[0] : ''}`,
+      content: `🎉 **Interview Complete!**\n\n🏆 Overall Score: **${Math.round(behavioralReport.overallScore * 10)}/100** — ${behavioralReport.recommendation}\n\n📊 Technical: ${Math.round(behavioralReport.technicalScore * 10)}/100\n🗣️ Communication: ${Math.round(behavioralReport.communicationScore * 10)}/100\n🎯 Confidence: ${Math.round(behavioralReport.confidenceScore * 10)}/100\n🧠 Behavior: ${Math.round(behavioralReport.behaviorScore * 10)}/100\n\n${behavioralReport.strengths.length > 0 ? '**Strengths:** ' + behavioralReport.strengths[0] : ''}`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, completeMsg]);
@@ -1141,7 +1143,7 @@ export default function VideoInterviewPage() {
                 if (v) {
                   videoRef.current = v;
                   // Attach camera stream from ref (persists across renders)
-                  const stream = cameraStreamRef.current || cameraStream;
+                  const stream = cameraStream;
                   if (stream && v.srcObject !== stream) {
                     v.srcObject = stream;
                     v.play().catch(() => {});

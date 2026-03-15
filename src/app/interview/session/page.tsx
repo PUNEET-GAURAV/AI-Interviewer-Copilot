@@ -119,7 +119,7 @@ export default function InterviewSessionPage() {
     const feedbackMsg: Message = {
       id: crypto.randomUUID(),
       role: 'ai',
-      content: `📊 **Score: ${score.overall}/10**\n${score.feedback}`,
+      content: `📊 **Score: ${Math.round(score.overall * 10)}/100**\n${score.feedback}`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, feedbackMsg]);
@@ -178,7 +178,7 @@ export default function InterviewSessionPage() {
     const completeMsg: Message = {
       id: crypto.randomUUID(),
       role: 'ai',
-      content: `🎉 **Interview Complete!**\n\nYour overall score: **${result.overallScore}/10**\n\n${result.recommendation}\n\nClick below to view your detailed results and skill analysis.`,
+      content: `🎉 **Interview Complete!**\n\nYour overall score: **${Math.round(result.overallScore * 10)}/100**\n\n${result.recommendation}\n\nClick below to view your detailed results and skill analysis.`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, completeMsg]);

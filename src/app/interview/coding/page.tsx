@@ -461,7 +461,7 @@ export default function CodingInterviewPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
                 <div style={{ padding: 12, borderRadius: 10, background: 'var(--bg-secondary)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: result.isCorrect ? '#10b981' : 'var(--accent-red)' }}>{result.score}/10</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: result.isCorrect ? '#10b981' : 'var(--accent-red)' }}>{Math.round(result.score * 10)}/100</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Score</div>
                 </div>
                 <div style={{ padding: 12, borderRadius: 10, background: 'var(--bg-secondary)', textAlign: 'center' }}>
@@ -497,7 +497,7 @@ export default function CodingInterviewPage() {
                   <div key={q.label} style={{ marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                       <span style={{ color: 'var(--text-secondary)' }}>{q.label}</span>
-                      <span style={{ color: q.color, fontWeight: 700 }}>{q.val}/10</span>
+                      <span style={{ color: q.color, fontWeight: 700 }}>{Math.round(q.val * 10)}/100</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
                       <div style={{ height: '100%', borderRadius: 3, width: `${q.val * 10}%`, background: q.color, transition: 'width 0.5s ease' }} />
