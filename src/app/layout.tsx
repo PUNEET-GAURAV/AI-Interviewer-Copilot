@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   keywords: ["AI Interview", "Recruitment", "Enterprise Hiring", "Interview Simulation"],
 };
 
+import { AuthProvider } from "@/lib/firebase/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,8 +23,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        <ThemeToggle />
-        {children}
+        <AuthProvider>
+          <ThemeToggle />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

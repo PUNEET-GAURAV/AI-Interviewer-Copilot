@@ -2,12 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from '@/lib/firebase/AuthContext';
+import { signInWithGoogle, logOut } from '@/lib/firebase/config';
 
 export default function LandingPage() {
   const router = useRouter();
   const [hoveredRole, setHoveredRole] = useState<'admin' | 'candidate' | null>(null);
   const [showCandidatePrompt, setShowCandidatePrompt] = useState(false);
   const [candidateUrl, setCandidateUrl] = useState('');
+  const { user, loading } = useAuth();
 
   const handleSelect = (role: 'admin' | 'candidate') => {
     localStorage.setItem('userRole', role);
@@ -42,7 +45,29 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/logo.png" alt="Interview Mate" style={{ height: 40, width: 'auto' }} />
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Intelligent Enterprise Recruitment</span>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }} className="hide-on-mobile">Intelligent Enterprise Recruitment</span>
+          
+          <div style={{ height: '24px', width: '1px', background: 'var(--glass-border)' }} className="hide-on-mobile"></div>
+          
+          {loading ? (
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>...</span>
+          ) : user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {user.photoURL && <img src={user.photoURL} alt="Avatar" style={{ width: 28, height: 28, borderRadius: '50%' }} />}
+                <span className="hide-on-mobile" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{user.displayName?.split(' ')[0]}</span>
+              </div>
+              <button onClick={logOut} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12, background: 'rgba(239,68,68,0.1)', color: 'var(--accent-red)', border: 'none' }}>Logout</button>
+            </div>
+          ) : (
+            <button onClick={signInWithGoogle} className="btn-secondary" style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 14, height: 14 }} />
+              Sign in
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* Main Content */}

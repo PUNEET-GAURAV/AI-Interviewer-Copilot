@@ -13,6 +13,7 @@ import {
   calculateOverallResult,
 } from '@/lib/interview-engine';
 import { generateQuestion, evaluateResponse } from '@/lib/gemini';
+import { useAuth } from '@/lib/firebase/AuthContext';
 import { FaceMetrics, loadFaceModels, analyzeFrame, aggregateMetrics, captureFaceDescriptor } from '@/lib/face-analyzer';
 import { analyzeTranscript, countFillers, getSpeedCategory } from '@/lib/speech-analyzer';
 import { calculateBehavioralReport, BehavioralReport } from '@/lib/behavioral-scorer';
@@ -39,6 +40,7 @@ export default function VideoInterviewPage() {
   const [identityCaptured, setIdentityCaptured] = useState(false);
   const [baseDescriptor, setBaseDescriptor] = useState<Float32Array | null>(null);
   const [capturingIdentity, setCapturingIdentity] = useState(false);
+  const identityPictureRef = useRef<HTMLCanvasElement | null>(null);
 
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [adminIntroQuestions, setAdminIntroQuestions] = useState<string[]>([]);
@@ -743,24 +745,24 @@ export default function VideoInterviewPage() {
 
     const behavioralReport = calculateBehavioralReport(sessionVideo, sessionSpeech, answerScores, 75);
 
-    // Store everything
     const enhancedResult = {
       ...result,
       behavioralReport,
       videoMetrics: sessionVideo,
       speechMetrics: sessionSpeech,
+      answerScores,
+      fullTranscript,
       interviewType: 'video',
       duration: elapsed,
-      transcript: fullTranscript,
       timestamp: new Date().toISOString()
     };
-    localStorage.setItem('lastInterviewResult', JSON.stringify(enhancedResult));
 
+    localStorage.setItem('interviewResults', JSON.stringify(enhancedResult));
+    
     const historyStr = localStorage.getItem('interviewHistory');
     const history = historyStr ? JSON.parse(historyStr) : [];
     history.unshift(enhancedResult);
     localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
-
     const completeMsg: Message = {
       id: crypto.randomUUID(), role: 'ai',
       content: `🎉 **Interview Complete!**\n\n🏆 Overall Score: **${behavioralReport.overallScore}/100** — ${behavioralReport.recommendation}\n\n📊 Technical: ${behavioralReport.technicalScore}/100\n🗣️ Communication: ${behavioralReport.communicationScore}/100\n🎯 Confidence: ${behavioralReport.confidenceScore}/100\n🧠 Behavior: ${behavioralReport.behaviorScore}/100\n\n${behavioralReport.strengths.length > 0 ? '**Strengths:** ' + behavioralReport.strengths[0] : ''}`,
@@ -773,6 +775,40 @@ export default function VideoInterviewPage() {
     stream?.getTracks().forEach(t => t.stop());
     screenStreamRef.current?.getTracks().forEach(t => t.stop());
   };
+
+  const handleDownloadTranscript = () => {
+    if (!profile) return;
+    const transcriptText = messages
+      .filter(m => m.role !== 'system')
+      .map(m => `${m.role.toUpperCase()} (${new Date(m.timestamp).toLocaleTimeString()}): ${m.content}`)
+      .join('\n\n');
+    
+    const blob = new Blob([transcriptText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Interview_Transcript_${profile.name.replace(/\s+/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user && !localStorage.getItem('user')) {
+      router.push('/candidate/login');
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+        <div className="loader"></div>
+      </div>
+    );
+  }
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -963,6 +999,22 @@ export default function VideoInterviewPage() {
               if (desc) {
                 setBaseDescriptor(desc);
                 setIdentityCaptured(true);
+                
+                // Draw snapshot to canvas for display during interview
+                setTimeout(() => {
+                  if (videoRef.current && identityPictureRef.current) {
+                    const ctx = identityPictureRef.current.getContext('2d');
+                    if (ctx) {
+                      identityPictureRef.current.width = videoRef.current.videoWidth;
+                      identityPictureRef.current.height = videoRef.current.videoHeight;
+                      // Flip context horizontally to match mirrored video
+                      ctx.translate(identityPictureRef.current.width, 0);
+                      ctx.scale(-1, 1);
+                      ctx.drawImage(videoRef.current, 0, 0, identityPictureRef.current.width, identityPictureRef.current.height);
+                    }
+                  }
+                }, 100);
+
               } else {
                 alert('No face detected. Please ensure your face is clearly visible and well-lit.');
               }
@@ -1104,6 +1156,17 @@ export default function VideoInterviewPage() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left: Video + Controls */}
         <div style={{ width: showAiPanel ? 320 : 360, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--glass-border)', background: 'var(--bg-secondary)', transition: 'width 0.3s ease' }}>
+          {/* Identity Capture Snapshot */}
+          <div style={{ position: 'relative', width: '100%', height: 100, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--glass-border)', zIndex: 5 }}>
+            <span style={{ position: 'absolute', top: 6, left: 10, fontSize: 10, color: 'var(--accent-cyan)', fontWeight: 600, background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: 4 }}>
+              📸 Proctored Identity
+            </span>
+            <canvas 
+              ref={identityPictureRef} 
+              style={{ height: '100%', width: 'auto', objectFit: 'contain', borderRadius: 8 }} 
+            />
+          </div>
+
           {/* Video */}
           <div style={{ position: 'relative', aspectRatio: '4/3', background: '#000' }}>
             {cameraError ? (
@@ -1112,10 +1175,19 @@ export default function VideoInterviewPage() {
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>{cameraError}</p>
               </div>
             ) : (
-              <video ref={videoRef} autoPlay muted playsInline style={{
-                width: '100%', height: '100%', objectFit: 'cover',
-                transform: 'scaleX(-1)', opacity: cameraOn ? 1 : 0.1,
-              }} />
+              <video 
+                ref={(v) => {
+                  if (v && cameraStream && v.srcObject !== cameraStream) {
+                    v.srcObject = cameraStream;
+                  }
+                  if (v) videoRef.current = v;
+                }}
+                autoPlay muted playsInline 
+                style={{
+                  width: '100%', height: '100%', objectFit: 'cover',
+                  transform: 'scaleX(-1)', opacity: cameraOn ? 1 : 0.1,
+                }} 
+              />
             )}
             {!cameraOn && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}>
@@ -1375,9 +1447,14 @@ export default function VideoInterviewPage() {
           </div>
 
           {isComplete && (
-            <div style={{ padding: 14, borderTop: '1px solid var(--glass-border)', display: 'flex', gap: 10 }}>
-              <button onClick={() => router.push('/interview/results')} className="btn-primary" style={{ flex: 1, padding: 14 }}>📊 View Full Report</button>
-              <button onClick={() => router.push('/skills')} className="btn-secondary" style={{ flex: 1, padding: 14 }}>📈 Skill Map</button>
+            <div style={{ padding: 14, borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => router.push('/interview/results')} className="btn-primary" style={{ flex: 1, padding: 14 }}>📊 View Full Report</button>
+                <button onClick={() => router.push('/skills')} className="btn-secondary" style={{ flex: 1, padding: 14 }}>📈 Skill Map</button>
+              </div>
+              <button onClick={handleDownloadTranscript} className="btn-secondary" style={{ width: '100%', padding: 12, fontSize: 13, background: 'rgba(0,212,255,0.05)', color: 'var(--accent-cyan)', borderColor: 'var(--accent-cyan)' }}>
+                📥 Download QA Transcript (.txt)
+              </button>
             </div>
           )}
         </div>

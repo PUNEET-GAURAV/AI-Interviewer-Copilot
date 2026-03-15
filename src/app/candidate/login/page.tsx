@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/firebase/AuthContext';
+import { signInWithGoogle } from '@/lib/firebase/config';
 
 export default function CandidateLoginPage() {
   const router = useRouter();
@@ -10,6 +12,20 @@ export default function CandidateLoginPage() {
   const [email, setEmail] = useState('');
   const [interviewUrl, setInterviewUrl] = useState('');
   const [error, setError] = useState('');
+  const { user } = useAuth();
+
+  const handleGoogleLogin = async () => {
+    try {
+      const gUser = await signInWithGoogle();
+      if (gUser) {
+        setName(gUser.displayName || '');
+        setEmail(gUser.email || '');
+        // We don't auto-submit because they still need to provide the interview link
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +64,17 @@ export default function CandidateLoginPage() {
         <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
           Enter your details and the link provided by your recruiter
         </p>
+
+        <button type="button" onClick={handleGoogleLogin} className="btn-secondary" style={{ width: '100%', marginBottom: 24, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'rgba(255,255,255,0.05)' }}>
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          <span>Quick pre-fill with Google</span>
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }}></div>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>OR ENTER MANUALLY</span>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }}></div>
+        </div>
 
         {error && <div style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</div>}
 

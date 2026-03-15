@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/firebase/AuthContext';
 
 interface CustomQuestion {
   id: string;
@@ -32,6 +34,24 @@ export default function AdminDashboardPage() {
   const [filterRole, setFilterRole] = useState('All');
   const [filterDifficulty, setFilterDifficulty] = useState('All');
   const [tab, setTab] = useState<'questions' | 'settings' | 'analytics'>('questions');
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      const storedUser = localStorage.getItem('user');
+      const role = localStorage.getItem('userRole');
+      
+      if (!user && !storedUser) {
+        router.push('/admin/login');
+      } else if (role !== 'admin') {
+        router.push('/');
+      } else {
+        setIsAuthorized(true);
+      }
+    }
+  }, [user, loading, router]);
   
   // Analytics State
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

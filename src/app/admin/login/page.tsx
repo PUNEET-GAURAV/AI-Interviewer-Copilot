@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/firebase/AuthContext';
+import { signInWithGoogle } from '@/lib/firebase/config';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -10,6 +12,20 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [adminCode, setAdminCode] = useState('');
   const [error, setError] = useState('');
+  const { user } = useAuth();
+
+  const handleGoogleLogin = async () => {
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
+        localStorage.setItem('user', JSON.stringify({ email: user.email, name: user.displayName, role: 'admin' }));
+        localStorage.setItem('userRole', 'admin');
+        router.push('/admin/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +65,17 @@ export default function AdminLoginPage() {
             🛡️ Sign In as Admin
           </button>
         </form>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }}></div>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>OR</span>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }}></div>
+        </div>
+
+        <button onClick={handleGoogleLogin} className="btn-secondary" style={{ width: '100%', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'rgba(255,255,255,0.05)' }}>
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          <span>Continue with Google</span>
+        </button>
 
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
           Not an admin? <Link href="/candidate/login" style={{ color: 'var(--accent-cyan)', textDecoration: 'none', fontWeight: 600 }}>Sign in as Candidate</Link>
