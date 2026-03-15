@@ -205,7 +205,11 @@ export default function VideoInterviewPage() {
           handleLookAwayViolation();
         }
 
-        if (metrics.identityMismatch && metrics.faceDetected) {
+        if (metrics.multipleFacesDetected) {
+          if (!isComplete) {
+            handleIdentityViolation();
+          }
+        } else if (metrics.identityMismatch && metrics.faceDetected) {
           mismatchCountRef.current += 1;
           if (mismatchCountRef.current > 3 && !isComplete) { // 3 mismatch hits = violation
             handleIdentityViolation();

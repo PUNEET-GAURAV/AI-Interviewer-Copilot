@@ -63,6 +63,10 @@ export default function AdminDashboardPage() {
   const [enableFillerAnalysis, setEnableFillerAnalysis] = useState(true);
   const [evaluationStrictness, setEvaluationStrictness] = useState('balanced');
   const [generatedLink, setGeneratedLink] = useState('');
+  
+  // Compulsory Intro Questions
+  const [introQuestions, setIntroQuestions] = useState<string[]>([]);
+  const [newIntroQuestion, setNewIntroQuestion] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('adminQuestions');
@@ -70,6 +74,16 @@ export default function AdminDashboardPage() {
       try { setQuestions(JSON.parse(saved)); } catch { setQuestions(DEFAULT_QUESTIONS); }
     } else {
       setQuestions(DEFAULT_QUESTIONS);
+    }
+
+    const savedIntro = localStorage.getItem('adminIntroQuestions');
+    if (savedIntro) {
+      try { setIntroQuestions(JSON.parse(savedIntro)); } catch { setIntroQuestions([]); }
+    } else {
+      setIntroQuestions([
+        'Tell me about yourself and your background.',
+        'Why are you interested in this role and our company?'
+      ]);
     }
   }, []);
 
@@ -134,6 +148,11 @@ export default function AdminDashboardPage() {
   const saveQuestions = (qs: CustomQuestion[]) => {
     setQuestions(qs);
     localStorage.setItem('adminQuestions', JSON.stringify(qs));
+  };
+
+  const saveIntroQuestions = (qs: string[]) => {
+    setIntroQuestions(qs);
+    localStorage.setItem('adminIntroQuestions', JSON.stringify(qs));
   };
 
   const resetForm = () => {
@@ -424,6 +443,52 @@ export default function AdminDashboardPage() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{s.desc}</div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: 28 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>🎤 Compulsory Introductory Questions</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                These questions will be asked to every candidate sequentially before the AI generates technical questions based on their resume.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                {introQuestions.map((iq, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--bg-secondary)', borderRadius: 8 }}>
+                    <span style={{ fontSize: 14 }}>{iq}</span>
+                    <button onClick={() => saveIntroQuestions(introQuestions.filter((_, i) => i !== idx))} style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'var(--accent-red)' }}>🗑️</button>
+                  </div>
+                ))}
+                {introQuestions.length === 0 && (
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No compulsory questions set. Adding some is highly recommended!</div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input 
+                  type="text" 
+                  value={newIntroQuestion} 
+                  onChange={e => setNewIntroQuestion(e.target.value)} 
+                  placeholder="e.g. Describe a time you demonstrated leadership..."
+                  className="input-field" 
+                  style={{ flex: 1, padding: '10px 14px', fontSize: 13 }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newIntroQuestion.trim()) {
+                      saveIntroQuestions([...introQuestions, newIntroQuestion.trim()]);
+                      setNewIntroQuestion('');
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => {
+                    if (newIntroQuestion.trim()) {
+                      saveIntroQuestions([...introQuestions, newIntroQuestion.trim()]);
+                      setNewIntroQuestion('');
+                    }
+                  }}
+                  className="btn-primary" 
+                  style={{ padding: '0 20px', fontSize: 13, whiteSpace: 'nowrap' }}
+                >
+                  ➕ Add
+                </button>
               </div>
             </div>
 
