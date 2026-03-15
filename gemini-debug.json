@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "[\n  {\n    \"question\": \"Alright, let's talk about efficiency. Imagine you're working on a feature for a popular social media platform. Users want to see a 'trending topics' list that needs to be updated very frequently, showing the top K most discussed topics over a rolling time window – say, the last five minutes. How would you go about designing a system to efficiently track these topics and retrieve the top K, keeping both performance and memory usage in mind? What specific data structures would you leverage, and why would those be your choices?\",\n    \"category\": \"Algorithms & Data Structures\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Hash Map\",\n      \"Min/Max Heap\",\n      \"Sliding Window\",\n      \"Time/Space Complexity\",\n      \"Trade-offs\"\n    ]\n  },\n  {\n    \"question\": \"Okay, let's shift to design. Think about building a new API for an e-commerce platform. Your task is to design the core functionality for a customer's shopping cart. How would you structure the classes and interfaces for this? I'm thinking about operations like adding items, removing items, updating quantities, and calculating the total. Beyond just getting it to work, how would you ensure your design is flexible and extensible, so it can easily accommodate new features down the road, like applying different discount types or handling various product categories?\",\n    \"category\": \"Object-Oriented Design\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Classes\",\n      \"Interfaces\",\n      \"Encapsulation\",\n      \"Polymorphism\",\n      \"Inheritance vs. Composition\",\n      \"Design Patterns\",\n      \"API Design Principles\",\n      \"Extensibility\"\n    ]\n  },\n  {\n    \"question\": \"Now, let's talk about real-world challenges. You've deployed a new backend service that's designed to process user requests in parallel to improve responsiveness. After it goes live, you start noticing something odd: some requests process perfectly fine, but others seem to occasionally hang indefinitely or return incorrect data, even though the core logic for each request seems sound. You check the logs, but there aren't any clear error messages, just these long delays for specific requests. How would you approach debugging this kind of intermittent issue in a concurrent system? What are some common culprits you'd investigate, and what tools or techniques would you use to really pinpoint the root cause?\",\n    \"category\": \"Debugging & Concurrency\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Race Conditions\",\n      \"Deadlocks\",\n      \"Resource Contention\",\n      \"Thread Safety\",\n      \"Mutexes/Semaphores\",\n      \"Logging Best Practices\",\n      \"Monitoring Tools\",\n      \"Profiling\",\n      \"Systematic Debugging\"\n    ]\n  }\n]"
+            "text": "[\n  {\n    \"question\": \"Welcome! To start, could you tell us what initially drew you to a career in Information Technology, and what aspects of working in an enterprise IT environment particularly appeal to you?\",\n    \"category\": \"Motivation & Role Understanding\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"career interest\", \"understanding of IT roles\", \"enterprise environment appeal\"]\n  },\n  {\n    \"question\": \"In a general IT support scenario, imagine a user reports that they can't print to any network printer. Walk us through the very first steps you would take to begin diagnosing this issue.\",\n    \"category\": \"Basic Troubleshooting\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"problem diagnosis\", \"network basics\", \"systematic approach\"]\n  },\n  {\n    \"question\": \"Working in IT often involves explaining technical concepts to non-technical colleagues. Can you describe your approach to communicating a simple technical solution or instruction clearly and effectively to someone without an IT background?\",\n    \"category\": \"Communication Skills\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"clear communication\", \"empathy\", \"simplification of technical terms\", \"active listening\"]\n  }\n]"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 383,
-    "candidatesTokenCount": 629,
-    "totalTokenCount": 2863,
+    "promptTokenCount": 3372,
+    "candidatesTokenCount": 267,
+    "totalTokenCount": 4340,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 383
+        "tokenCount": 3372
       }
     ],
-    "thoughtsTokenCount": 1851
+    "thoughtsTokenCount": 701
   },
   "modelVersion": "gemini-2.5-flash",
-  "responseId": "8W62afT7OKCGjuMPsqjy8Aw"
+  "responseId": "04W2ab6qEOPdqfkP--XjoAs"
 }
