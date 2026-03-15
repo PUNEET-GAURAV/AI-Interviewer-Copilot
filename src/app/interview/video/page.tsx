@@ -41,6 +41,7 @@ export default function VideoInterviewPage() {
   const [capturingIdentity, setCapturingIdentity] = useState(false);
 
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
+  const [adminIntroQuestions, setAdminIntroQuestions] = useState<string[]>([]);
   const [round, setRound] = useState<InterviewRound>('intro');
   const [questionIdx, setQuestionIdx] = useState(0);
   const [roundQuestionIdx, setRoundQuestionIdx] = useState(0);
@@ -72,6 +73,15 @@ export default function VideoInterviewPage() {
   const [fillerCount, setFillerCount] = useState(0);
   const [showAiPanel, setShowAiPanel] = useState(true);
   const totalQ = getTotalQuestions();
+
+  useEffect(() => {
+    const savedIntro = localStorage.getItem('adminIntroQuestions');
+    if (savedIntro) {
+      try {
+        setAdminIntroQuestions(JSON.parse(savedIntro));
+      } catch (e) {}
+    }
+  }, []);
 
   const [violationCount, setViolationCount] = useState(0);
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -603,6 +613,29 @@ export default function VideoInterviewPage() {
 
   const askQuestion = async (p: CandidateProfile, r: InterviewRound, rqIdx: number) => {
     setIsTyping(true);
+
+    if (r === 'intro' && adminIntroQuestions.length > 0) {
+      if (rqIdx < adminIntroQuestions.length) {
+        const qText = adminIntroQuestions[rqIdx];
+        setTimeout(() => {
+          const msg: Message = {
+            id: crypto.randomUUID(), role: 'ai',
+            content: qText,
+            timestamp: new Date(),
+            category: `Introductory Questions`,
+            difficulty: 'easy',
+          };
+          setCurrentExpectedTopics(['communication', 'background']);
+          setCurrentDifficulty('easy');
+          setMessages(prev => [...prev, msg]);
+          setIsTyping(false);
+          setQuestionTimer(0);
+          speakText(qText);
+        }, 1200);
+        return;
+      }
+    }
+
     const generated = await generateQuestion(p, r, rqIdx);
     setTimeout(() => {
       const msg: Message = {
@@ -658,7 +691,12 @@ export default function VideoInterviewPage() {
     const nextRoundQIdx = roundQuestionIdx + 1;
     const roundConfig = getRoundConfig(round);
 
-    if (nextRoundQIdx >= roundConfig.questionCount) {
+    let maxQuestions = roundConfig.questionCount;
+    if (round === 'intro' && adminIntroQuestions.length > 0) {
+      maxQuestions = adminIntroQuestions.length;
+    }
+
+    if (nextRoundQIdx >= maxQuestions) {
       const nextRound = getNextRound(round);
       if (!nextRound) {
         setTimeout(() => finishInterview(profile, [...scores, score]), 3000);

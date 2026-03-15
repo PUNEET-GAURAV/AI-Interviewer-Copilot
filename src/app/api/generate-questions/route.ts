@@ -12,9 +12,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const numQuestions = round === 'intro' ? 2 : round === 'wrapup' ? 1 : 3;
+    const numQuestions = round === 'wrapup' ? 1 : 3;
     const difficultyMap: Record<string, string> = {
-      intro: 'easy',
       technical: 'medium',
       advanced: 'hard',
       behavioral: 'medium',
@@ -29,8 +28,8 @@ Candidate Skills: ${profile.skills?.join(', ') || 'General IT'}
 Target Interview Round: ${round}
 Company Style: ${profile.companyStyle || 'Enterprise'}
 
-I may have provided the candidate's Resume and/or Certificates as attached documents/images in this request.
-If attached, PLEASE deep analyze their resume projects, past roles, and certificates. Ask questions specifically targeting the claims, projects, and skills mentioned in these documents.
+I have provided the candidate's Resume and/or Certificates as attached documents/images in this request.
+You MUST deep analyze their resume projects, past roles, and certificates. Focus heavily on generating role-specific technical, analytical, and managerial questions targeting the exact claims, projects, and skills mentioned in these documents. Do not ask generic questions if resume details are available.
 
 CRITICAL RULES:
 1. Formulate questions exactly as a real human would speak them in a live conversation.

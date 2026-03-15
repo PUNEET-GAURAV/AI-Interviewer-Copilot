@@ -198,6 +198,18 @@ export default function AdminDashboardPage() {
 
   const roleCounts = ROLES.map(r => ({ role: r, count: questions.filter(q => q.role === r || q.role === 'All').length }));
 
+  const downloadReport = (h: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const content = `Interview Report - ${h.candidateProfile?.name || 'Anonymous'}\nRole: ${h.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(h.timestamp || Date.now()).toLocaleString()}\nOverall Score: ${h.overallScore}/100\nTechnical: ${h.technicalAvg} | Communication: ${h.communicationAvg} | Problem Solving: ${h.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${h.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/100 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${h.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${h.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${h.candidateProfile?.name || 'candidate'}_QA_Report.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
       {/* Nav */}
@@ -597,16 +609,17 @@ export default function AdminDashboardPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Table Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr', padding: '0 16px 8px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 1fr', padding: '0 16px 8px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
                     <div>Candidate Name</div>
                     <div>Target Role</div>
                     <div>Date</div>
                     <div>Type</div>
+                    <div style={{ textAlign: 'center' }}>Report</div>
                     <div style={{ textAlign: 'right' }}>Score</div>
                   </div>
                   {/* Table Rows */}
                   {[...history].reverse().slice(0, 10).map((h, i) => (
-                    <div key={i} className="glass-card-sm" style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.2s ease' }} 
+                    <div key={i} className="glass-card-sm" style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 1fr', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.2s ease' }} 
                          onClick={() => setSelectedCandidate(h)}
                          onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(79,70,229,0.3)')}
                          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--glass-border)')}
@@ -619,6 +632,16 @@ export default function AdminDashboardPage() {
                            <span className="tag tag-cyan" style={{ fontSize: 10, padding: '2px 6px' }}>🎥 Video</span> : 
                            <span className="tag" style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(100,116,139,0.1)', color: 'var(--text-muted)' }}>💬 Text</span>
                         }
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <button 
+                          onClick={(e) => downloadReport(h, e)}
+                          className="btn-secondary"
+                          style={{ padding: '4px 8px', fontSize: 11, background: 'rgba(16,185,129,0.1)', color: 'var(--accent-green)', border: '1px solid rgba(16,185,129,0.2)', cursor: 'pointer', borderRadius: 6 }}
+                          title="Download Q&A Report"
+                        >
+                          ⬇️ PDF/TXT
+                        </button>
                       </div>
                       <div style={{ textAlign: 'right', fontWeight: 800, fontSize: 14, color: h.overallScore >= 75 ? 'var(--accent-green)' : h.overallScore >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>
                         {h.overallScore}
