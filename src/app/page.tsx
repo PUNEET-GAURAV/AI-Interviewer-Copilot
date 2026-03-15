@@ -238,6 +238,45 @@ export default function LandingPage() {
               Start Learning →
             </div>
           </button>
+
+          {/* Coding Mock Interview */}
+          <button
+            onClick={() => router.push('/interview/coding')}
+            style={{
+              padding: 40, borderRadius: 20, cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)', fontFamily: 'Inter, sans-serif',
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--glass-border)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+              e.currentTarget.style.borderColor = '#10b981';
+              e.currentTarget.style.boxShadow = '0 20px 60px rgba(16,185,129,0.15)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(0,212,255,0.05))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'var(--glass-border)';
+              e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+              e.currentTarget.style.background = 'var(--glass-bg)';
+            }}
+          >
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 20 }}>💻</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, color: 'var(--text-primary)' }}>Coding <span style={{ color: '#10b981' }}>Mock Interview</span></h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+              Solve real coding challenges. AI analyzes your code for correctness, time complexity, and suggests optimal approaches in real-time.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {['Live Coding', 'AI Analysis', 'Time Complexity', 'Best Practices'].map(tag => (
+                <span key={tag} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 14, color: '#10b981' }}>
+              Start Coding →
+            </div>
+          </button>
         </div>
 
         {/* Stats Bar */}
