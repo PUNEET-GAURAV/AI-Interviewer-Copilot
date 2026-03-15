@@ -18,14 +18,38 @@ const app = getApps().length === 0 && firebaseConfig.apiKey
 const auth = app ? getAuth(app) : null;
 const googleProvider = new GoogleAuthProvider();
 
+// Guard to prevent double-popup crashes
+let signInInProgress = false;
+
 export const signInWithGoogle = async () => {
-  if (!auth) throw new Error("Firebase is not initialized. Please check your .env.local file.");
+  if (!auth) {
+    console.warn("Firebase is not initialized. Skipping Google Sign-in.");
+    return null;
+  }
+  if (signInInProgress) {
+    console.warn("Sign-in already in progress, ignoring duplicate request.");
+    return null;
+  }
+  signInInProgress = true;
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
-    console.error("Error signing in with Google", error);
-    throw error;
+  } catch (error: any) {
+    const code = error?.code || '';
+    // Silently handle known non-critical errors
+    if (code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user') {
+      console.warn("Sign-in popup was cancelled or closed by user.");
+      return null;
+    }
+    if (code === 'auth/configuration-not-found') {
+      console.error("Firebase Auth: Google Sign-In provider is not enabled. Please enable it in Firebase Console → Authentication → Sign-in method → Google.");
+      alert("Google Sign-In is not configured yet. You can still use the app without signing in.");
+      return null;
+    }
+    console.error("Error signing in with Google:", error);
+    return null;
+  } finally {
+    signInInProgress = false;
   }
 };
 
@@ -35,7 +59,6 @@ export const logOut = async () => {
     await signOut(auth);
   } catch (error) {
     console.error("Error signing out", error);
-    throw error;
   }
 };
 

@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "[\n  {\n    \"question\": \"So, to kick things off, I'd love to hear a bit about your journey into software engineering. What was it that initially drew you to this field, and perhaps you could share an early project or a particular problem you encountered that really solidified your interest in building solutions with code? I'm curious to hear about that experience.\",\n    \"category\": \"Behavioral/Motivation\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"personal journey\", \"motivation\", \"early projects\", \"problem identification\"]\n  },\n  {\n    \"question\": \"At a company like ours, we're constantly building and evolving complex systems, which means we often face technical challenges or need to quickly get up to speed on new technologies. Can you tell me about a time you had to troubleshoot a tricky technical issue or quickly learn a new concept or tool from the ground up? How did you approach that situation, and what was your process for breaking down the problem or acquiring that new knowledge?\",\n    \"category\": \"Technical/Problem Solving\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"troubleshooting\", \"learning new technologies\", \"problem decomposition\", \"resourcefulness\", \"debugging\"]\n  }\n]"
+            "text": "[\n  {\n    \"question\": \"Welcome! To start, I'd love to hear a bit about what initially drew you to software engineering and what kind of technical challenges you find most engaging or rewarding to tackle. What excites you most about building software?\",\n    \"category\": \"Behavioral/Motivation\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"Personal motivation\", \"Problem-solving interests\", \"Technical curiosity\", \"Career aspirations\"]\n  },\n  {\n    \"question\": \"Could you tell me about a specific project, either from a past role or a personal endeavor, where you encountered a significant technical challenge or a complex problem? Walk me through how you approached understanding the problem, what steps you took to solve it, and what alternatives or trade-offs you considered along the way.\",\n    \"category\": \"Technical/Problem Solving\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\"Project overview\", \"Technical challenge identification\", \"Problem-solving methodology\", \"Decision-making\", \"Trade-offs\", \"Outcomes\"]\n  },\n  {\n    \"question\": \"In a fast-paced environment like Big Tech, you'll often encounter unfamiliar codebases or systems. Imagine you're tasked with debugging an unexpected performance degradation in a service that's critical but new to you. How would you typically go about diagnosing the root cause of such an issue, and what's your approach to quickly getting up to speed on a new technical domain or system?\",\n    \"category\": \"Technical/Troubleshooting/Learning\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\"Debugging strategies\", \"Root cause analysis\", \"System understanding\", \"Learning new technologies\", \"Resourcefulness\", \"Collaboration\"]\n  }\n]"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 314,
-    "candidatesTokenCount": 266,
-    "totalTokenCount": 1425,
+    "promptTokenCount": 334,
+    "candidatesTokenCount": 373,
+    "totalTokenCount": 1918,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 314
+        "tokenCount": 334
       }
     ],
-    "thoughtsTokenCount": 845
+    "thoughtsTokenCount": 1211
   },
   "modelVersion": "gemini-2.5-flash",
-  "responseId": "0tu1aefhFM-ImNMPld-KmAM"
+  "responseId": "TUK2aeb4MNjPg8UPpc2puAY"
 }
