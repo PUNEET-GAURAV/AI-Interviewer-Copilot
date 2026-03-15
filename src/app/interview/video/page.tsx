@@ -145,41 +145,47 @@ export default function VideoInterviewPage() {
     }
   }, []);
 
-  // Initialize camera
+  // Initialize camera — persists across screen transitions
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    let isActive = false;
+    let isActive = true;
     const initCamera = async () => {
       if (!hasScreenShare) return;
-      isActive = true;
+      // Don't re-init if we already have a live stream
+      if (cameraStreamRef.current && cameraStreamRef.current.getTracks().some(t => t.readyState === 'live')) {
+        setCameraStream(cameraStreamRef.current);
+        return;
+      }
       try {
-        // Try getting both video and audio first
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (isActive) {
-           setCameraStream(stream);
-           if (videoRef.current) videoRef.current.srcObject = stream;
-        }
-        if (isActive) setCameraError('');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (!isActive) { stream.getTracks().forEach(t => t.stop()); return; }
+        cameraStreamRef.current = stream;
+        setCameraStream(stream);
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        setCameraError('');
       } catch (err: any) {
         if (!isActive) return;
         console.warn("Failed to get both video and audio, trying fallbacks...", err);
         try {
-          // Fallback 1: Try video only (maybe mic is missing or blocked)
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (!isActive) { stream.getTracks().forEach(t => t.stop()); return; }
+          cameraStreamRef.current = stream;
+          setCameraStream(stream);
           if (videoRef.current) videoRef.current.srcObject = stream;
           setMicOn(false);
           setCameraError('');
         } catch (vidErr: any) {
           if (!isActive) return;
           try {
-            // Fallback 2: Try audio only (maybe camera is missing or blocked)
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (!isActive) { stream.getTracks().forEach(t => t.stop()); return; }
+            cameraStreamRef.current = stream;
+            setCameraStream(stream);
             if (videoRef.current) videoRef.current.srcObject = stream;
             setCameraOn(false);
             setCameraError('');
           } catch (audErr: any) {
             if (!isActive) return;
-            // All options failed
             console.error("Complete media access failure:", err, vidErr, audErr);
             setCameraError(`Access error: ${err.message || 'Permissions denied or no hardware found.'} Please check browser settings.`);
           }
@@ -187,10 +193,8 @@ export default function VideoInterviewPage() {
       }
     };
     initCamera();
-    return () => { 
-      isActive = false;
-      stream?.getTracks().forEach((t: MediaStreamTrack) => t.stop()); 
-    };
+    return () => { isActive = false; };
+    // NOTE: we do NOT stop camera tracks on cleanup — the stream persists for identity verification
   }, [hasScreenShare]);
 
   // Start face analysis loop when models are ready
@@ -988,10 +992,15 @@ export default function VideoInterviewPage() {
               autoPlay playsInline muted 
               style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
               ref={(v) => {
-                if (v && cameraStream && v.srcObject !== cameraStream) {
-                  v.srcObject = cameraStream;
+                if (v) {
+                  videoRef.current = v;
+                  // Attach camera stream from ref (persists across renders)
+                  const stream = cameraStreamRef.current || cameraStream;
+                  if (stream && v.srcObject !== stream) {
+                    v.srcObject = stream;
+                    v.play().catch(() => {});
+                  }
                 }
-                if (v) videoRef.current = v;
               }}
             />
           </div>
@@ -1028,6 +1037,12 @@ export default function VideoInterviewPage() {
             }}
           >
             {capturingIdentity ? 'Capturing...' : !modelsReady ? 'Loading models...' : 'Capture Identity'}
+          </button>
+          <button 
+            onClick={() => setIdentityCaptured(true)}
+            style={{ marginTop: 12, background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontSize: 12, width: '100%' }}
+          >
+            Skip Identity Verification →
           </button>
         </div>
       </div>
