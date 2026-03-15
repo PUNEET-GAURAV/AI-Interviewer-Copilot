@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const CODING_PROBLEMS = [
   {
@@ -72,12 +73,84 @@ interface AnalysisResult {
 }
 
 export default function CodingInterviewPage() {
+  const router = useRouter();
   const [selectedProblem, setSelectedProblem] = useState(CODING_PROBLEMS[0]);
   const [code, setCode] = useState(CODING_PROBLEMS[0].starterCode);
   const [language, setLanguage] = useState('javascript');
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [showProblems, setShowProblems] = useState(false);
+
+  // Session & Proctoring State
+  const [sessionActive, setSessionActive] = useState(true);
+  const [terminated, setTerminated] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [warningVisible, setWarningVisible] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+
+  // Start webcam
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraOn(true);
+      setCameraError('');
+    } catch (err: any) {
+      setCameraError('Camera access denied. Video proctoring disabled.');
+      console.error('Camera error:', err);
+    }
+  }, []);
+
+  // Stop webcam
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraOn(false);
+  }, []);
+
+  // Terminate session
+  const terminateSession = useCallback(() => {
+    setTerminated(true);
+    setSessionActive(false);
+    stopCamera();
+  }, [stopCamera]);
+
+  // Tab switch detection
+  useEffect(() => {
+    if (!sessionActive || terminated) return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setTabSwitchCount(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 3) {
+            terminateSession();
+          } else {
+            setWarningVisible(true);
+            setTimeout(() => setWarningVisible(false), 4000);
+          }
+          return newCount;
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [sessionActive, terminated, terminateSession]);
+
+  // Start camera on mount
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, [startCamera, stopCamera]);
 
   const selectProblem = (problem: typeof CODING_PROBLEMS[0]) => {
     setSelectedProblem(problem);
@@ -87,7 +160,7 @@ export default function CodingInterviewPage() {
   };
 
   const submitCode = async () => {
-    if (!code.trim()) return;
+    if (!code.trim() || !sessionActive) return;
     setAnalyzing(true);
     setResult(null);
 
@@ -118,8 +191,54 @@ export default function CodingInterviewPage() {
     return 'var(--accent-red)';
   };
 
+  // Terminated overlay
+  if (terminated) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: 40 }}>
+        <div style={{ textAlign: 'center', maxWidth: 500 }}>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>🚫</div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent-red)', marginBottom: 12 }}>Session Terminated</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.6, marginBottom: 8 }}>
+            Your coding interview session has been terminated due to multiple tab switches.
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>
+            Tab switches detected: <strong style={{ color: 'var(--accent-red)' }}>{tabSwitchCount}</strong> (max allowed: 2)
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button
+              onClick={() => { setTerminated(false); setSessionActive(true); setTabSwitchCount(0); setResult(null); setCode(selectedProblem.starterCode); startCamera(); }}
+              className="btn-primary" style={{ padding: '12px 28px', fontSize: 15 }}
+            >
+              🔄 Restart Session
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              style={{ padding: '12px 28px', fontSize: 15, borderRadius: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer' }}
+            >
+              ← Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Tab Switch Warning */}
+      {warningVisible && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          padding: '14px 24px', textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))',
+          color: 'white', fontSize: 14, fontWeight: 700,
+          animation: 'slideDown 0.3s ease',
+          boxShadow: '0 4px 20px rgba(239,68,68,0.4)',
+        }}>
+          ⚠️ Warning: Tab switch detected! ({tabSwitchCount}/3) — Your session will be terminated after 3 switches.
+        </div>
+      )}
+
       {/* Nav */}
       <nav style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -130,6 +249,19 @@ export default function CodingInterviewPage() {
           <span style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>💻 Coding Interview</span>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Tab switch indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 8, background: tabSwitchCount > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${tabSwitchCount > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}` }}>
+            <span style={{ fontSize: 11, color: tabSwitchCount > 0 ? 'var(--accent-red)' : '#10b981', fontWeight: 600 }}>
+              🛡️ Switches: {tabSwitchCount}/3
+            </span>
+          </div>
+          {/* Camera status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, background: cameraOn ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${cameraOn ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: cameraOn ? '#10b981' : 'var(--accent-red)', animation: cameraOn ? 'pulse 2s infinite' : 'none' }} />
+            <span style={{ fontSize: 11, color: cameraOn ? '#10b981' : 'var(--accent-red)', fontWeight: 600 }}>
+              {cameraOn ? 'REC' : 'OFF'}
+            </span>
+          </div>
           <select 
             value={language} 
             onChange={e => setLanguage(e.target.value)}
@@ -204,7 +336,6 @@ export default function CodingInterviewPage() {
           {/* AI Analysis Results */}
           {result && (
             <div style={{ padding: 20, borderTop: '1px solid var(--glass-border)', overflow: 'auto', maxHeight: '50%' }}>
-              {/* Congrats or Score */}
               {result.isOptimal && result.congratsMessage ? (
                 <div style={{ padding: 16, borderRadius: 12, background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,212,255,0.1))', border: '1px solid rgba(16,185,129,0.3)', marginBottom: 16, textAlign: 'center' }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>🎉🏆🎉</div>
@@ -218,7 +349,6 @@ export default function CodingInterviewPage() {
                 </div>
               )}
 
-              {/* Score + Complexity */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
                 <div style={{ padding: 12, borderRadius: 10, background: 'var(--bg-secondary)', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: result.isCorrect ? '#10b981' : 'var(--accent-red)' }}>{result.score}/10</div>
@@ -238,7 +368,6 @@ export default function CodingInterviewPage() {
                 </div>
               </div>
 
-              {/* Errors */}
               {result.errors && result.errors.length > 0 && (
                 <div style={{ padding: 14, borderRadius: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 6 }}>⚠️ Issues Found:</div>
@@ -248,7 +377,6 @@ export default function CodingInterviewPage() {
                 </div>
               )}
 
-              {/* Code Quality Bars */}
               <div style={{ padding: 14, borderRadius: 10, background: 'var(--bg-secondary)' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Code Quality</div>
                 {[
@@ -268,7 +396,6 @@ export default function CodingInterviewPage() {
                 ))}
               </div>
 
-              {/* Feedback */}
               <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--bg-secondary)' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>📝 Feedback</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{result.feedback}</div>
@@ -277,7 +404,7 @@ export default function CodingInterviewPage() {
           )}
         </div>
 
-        {/* Right: Code Editor */}
+        {/* Right: Code Editor + Webcam */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>📝 Code Editor</span>
@@ -315,6 +442,37 @@ export default function CodingInterviewPage() {
                 }
               }}
             />
+
+            {/* Webcam Feed - Bottom Right */}
+            <div style={{
+              position: 'absolute', bottom: 16, right: 16, zIndex: 10,
+              width: 180, borderRadius: 12, overflow: 'hidden',
+              border: `2px solid ${cameraOn ? '#10b981' : 'rgba(239,68,68,0.5)'}`,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+              background: '#000',
+            }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{ width: '100%', display: 'block', transform: 'scaleX(-1)' }}
+              />
+              {!cameraOn && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, background: 'rgba(0,0,0,0.8)' }}>
+                  <span style={{ fontSize: 20 }}>📷</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: '0 8px' }}>{cameraError || 'Camera off'}</span>
+                </div>
+              )}
+              {/* Recording indicator */}
+              {cameraOn && (
+                <div style={{ position: 'absolute', top: 6, left: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} />
+                  <span style={{ fontSize: 9, color: '#ef4444', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>PROCTORED</span>
+                </div>
+              )}
+            </div>
+
             {analyzing && (
               <div style={{
                 position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -331,6 +489,8 @@ export default function CodingInterviewPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
       `}</style>
     </div>
   );
