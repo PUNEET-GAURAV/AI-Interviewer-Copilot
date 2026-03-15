@@ -27,8 +27,8 @@ Generate exactly ${numQuestions} highly specific, logical, and conversational in
 Candidate Skills: ${profile.skills?.join(', ') || 'General IT'}
 Target Interview Round: ${round}
 Company Style: ${profile.companyStyle || 'Enterprise'}
-
-I have provided the candidate's Resume and/or Certificates as attached documents/images in this request.
+${profile.resumeText ? `\nCandidate's Extracted Resume & Certificates Text:\n"""\n${profile.resumeText}\n"""\n` : ''}
+I have provided the candidate's Resume and/or Certificates as attached documents/images or extracted text in this request.
 You MUST deep analyze their resume projects, past roles, and certificates. Focus heavily on generating role-specific technical, analytical, and managerial questions targeting the exact claims, projects, and skills mentioned in these documents. Do not ask generic questions if resume details are available.
 
 CRITICAL RULES:

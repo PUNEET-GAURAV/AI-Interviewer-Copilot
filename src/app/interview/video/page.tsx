@@ -35,6 +35,15 @@ export default function VideoInterviewPage() {
   const [mobileConnected, setMobileConnected] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
   
+  // Resume upload states within interview
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [certFiles, setCertFiles] = useState<File[]>([]);
+  const [analyzingResume, setAnalyzingResume] = useState(false);
+  const [resumeUploaded, setResumeUploaded] = useState(false);
+  const [resumeAnalysisError, setResumeAnalysisError] = useState('');
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
+
   // Identity state
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [identityCaptured, setIdentityCaptured] = useState(false);
@@ -800,6 +809,68 @@ export default function VideoInterviewPage() {
 
   const { user, loading: authLoading } = useAuth();
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string || '');
+      reader.onerror = () => resolve(`[File: ${file.name}]`);
+      if (file.type === 'application/pdf') {
+        reader.onload = (e) => {
+          const text = e.target?.result as string || '';
+          const extractedText = text.replace(/[^\x20-\x7E\n\r]/g, ' ').replace(/\s+/g, ' ').substring(0, 5000);
+          resolve(`[PDF: ${file.name}] ${extractedText}`);
+        };
+        reader.readAsText(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+  };
+
+  const analyzeResumeAndContinue = async () => {
+    if (!resumeFile) {
+        setResumeUploaded(true);
+        return;
+    }
+    
+    setAnalyzingResume(true);
+    setResumeAnalysisError('');
+    try {
+      const resumeText = await readFileAsText(resumeFile);
+      const certTexts = await Promise.all(certFiles.map(f => readFileAsText(f)));
+      const allText = [resumeText, ...certTexts].join('\n\n---CERTIFICATE---\n\n');
+
+      const res = await fetch('/api/analyze-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: allText }),
+      });
+
+      if (!res.ok) throw new Error('Analysis failed');
+      const data = await res.json();
+      
+      const saved = localStorage.getItem('interviewProfile');
+      if (saved) {
+        const currentProfile = JSON.parse(saved);
+        const updatedProfile = {
+            ...currentProfile,
+            name: data.name && data.name !== 'Candidate' ? data.name : currentProfile.name,
+            role: data.role && data.role !== 'Software Engineer' ? data.role : currentProfile.role,
+            experience: data.experience && data.experience !== 'Not specified' ? data.experience : currentProfile.experience,
+            skills: data.skills && data.skills.length > 0 ? Array.from(new Set([...currentProfile.skills, ...data.skills])) : currentProfile.skills,
+            resumeText: allText
+        };
+        localStorage.setItem('interviewProfile', JSON.stringify(updatedProfile));
+        setProfile(updatedProfile);
+      }
+      setResumeUploaded(true);
+    } catch (err: any) {
+      setResumeAnalysisError(err.message || 'Failed to analyze resume');
+    } finally {
+      setAnalyzingResume(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user && !localStorage.getItem('user')) {
       router.push('/candidate/login');
@@ -878,6 +949,81 @@ export default function VideoInterviewPage() {
           >
             I Agree to All Rules
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!resumeUploaded) {
+    return (
+      <div className="gradient-bg grid-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="glass-card" style={{ maxWidth: 540, width: '100%', padding: '40px 32px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)' }}>Upload Resume & Certificates</h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Before we proceed, upload your resume and any certificates. This allows our AI to personalize the interview questions based on your background. You can skip this if you've already uploaded them.
+              </p>
+            </div>
+            
+            <div style={{ textAlign: 'left', marginBottom: 28, background: 'rgba(0,0,0,0.2)', padding: 20, borderRadius: 16, border: '1px solid var(--glass-border)' }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8, display: 'block' }}>Resume <span style={{color: 'var(--text-muted)', fontWeight: 400}}>(Required for AI Analysis)</span></label>
+                <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) setResumeFile(e.target.files[0]); }} />
+                <button 
+                onClick={() => resumeInputRef.current?.click()} 
+                style={{ 
+                    width: '100%', padding: '16px', borderRadius: 12, cursor: 'pointer',
+                    background: resumeFile ? 'rgba(16,185,129,0.1)' : 'var(--bg-secondary)', 
+                    border: resumeFile ? '1px solid var(--accent-green)' : '1px dashed var(--glass-border)',
+                    color: resumeFile ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 14, fontWeight: 500,
+                    display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s'
+                }}
+                >
+                <span style={{ fontSize: 24 }}>{resumeFile ? '✅' : '📄'}</span>
+                <div style={{ textAlign: 'left' }}>
+                    <div style={{ color: resumeFile ? 'var(--accent-green)' : 'var(--text-primary)' }}>{resumeFile ? resumeFile.name : 'Click to upload Resume (PDF, DOC, TXT)'}</div>
+                    {resumeFile && <div style={{ fontSize: 11, color: 'var(--accent-green)', opacity: 0.8, marginTop: 4 }}>{(resumeFile.size / 1024).toFixed(0)} KB • Click to change</div>}
+                </div>
+                </button>
+
+                <div style={{ height: 16 }} />
+
+                <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8, display: 'block' }}>Certificates <span style={{color: 'var(--text-muted)', fontWeight: 400}}>(Optional)</span></label>
+                <input ref={certInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) setCertFiles(Array.from(e.target.files)); }} />
+                <button 
+                onClick={() => certInputRef.current?.click()} 
+                style={{ 
+                    width: '100%', padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                    background: certFiles.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--bg-secondary)', 
+                    border: certFiles.length > 0 ? '1px solid var(--accent-green)' : '1px dashed var(--glass-border)',
+                    color: certFiles.length > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 13,
+                    display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s'
+                }}
+                >
+                <span style={{ fontSize: 20 }}>{certFiles.length > 0 ? '✅' : '🏆'}</span>
+                {certFiles.length > 0 ? `${certFiles.length} certificate(s) uploaded` : 'Click to upload Certificates'}
+                </button>
+            </div>
+
+            {resumeAnalysisError && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)' }}>❌ {resumeAnalysisError}</div>}
+
+            <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                    onClick={() => setResumeUploaded(true)} 
+                    className="btn-secondary"
+                    style={{ flex: 1, padding: 14, fontSize: 15 }}
+                >
+                    Skip & Proceed
+                </button>
+                <button 
+                    onClick={analyzeResumeAndContinue} 
+                    disabled={analyzingResume}
+                    className="btn-primary" 
+                    style={{ flex: 2, padding: 14, fontSize: 15 }}
+                >
+                    {analyzingResume ? '🔍 Analyzing...' : (resumeFile ? '🤖 Analyze & Continue' : 'Continue')}
+                </button>
+            </div>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/firebase/AuthContext';
 import { signInWithGoogle, logOut } from '@/lib/firebase/config';
 
@@ -12,6 +12,15 @@ export default function LandingPage() {
   const [candidateUrl, setCandidateUrl] = useState('');
   const { user, loading } = useAuth();
 
+  // Resume upload states
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [certFiles, setCertFiles] = useState<File[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisError, setAnalysisError] = useState('');
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
+
   const handleSelect = (role: 'admin' | 'candidate') => {
     localStorage.setItem('userRole', role);
     if (role === 'admin') {
@@ -21,21 +30,62 @@ export default function LandingPage() {
     }
   };
 
-  const handleCandidateSubmit = () => {
-    if (candidateUrl) {
-      const profile = {
-        name: 'Candidate',
-        role: 'Software Engineer',
-        experience: 'Not specified',
-        skills: ['General IT'],
-        companyStyle: 'Big Tech',
-        resumeText: 'Direct entry via URL',
-      };
-      localStorage.setItem('interviewProfile', JSON.stringify(profile));
-      router.push('/interview/video');
-    } else {
-      router.push('/candidate/login');
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string || '');
+      reader.onerror = () => resolve(`[File: ${file.name}]`);
+      if (file.type === 'application/pdf') {
+        // For PDFs, read as data URL and extract what we can
+        reader.onload = (e) => {
+          const text = e.target?.result as string || '';
+          // Try to extract readable text from PDF binary
+          const extractedText = text.replace(/[^\x20-\x7E\n\r]/g, ' ').replace(/\s+/g, ' ').substring(0, 5000);
+          resolve(`[PDF: ${file.name}] ${extractedText}`);
+        };
+        reader.readAsText(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+  };
+
+  const analyzeResume = async () => {
+    if (!resumeFile) return;
+    setAnalyzing(true);
+    setAnalysisError('');
+    try {
+      const resumeText = await readFileAsText(resumeFile);
+      const certTexts = await Promise.all(certFiles.map(f => readFileAsText(f)));
+      const allText = [resumeText, ...certTexts].join('\n\n---CERTIFICATE---\n\n');
+
+      const res = await fetch('/api/analyze-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: allText }),
+      });
+
+      if (!res.ok) throw new Error('Analysis failed');
+      const data = await res.json();
+      setAnalysisResult(data);
+    } catch (err: any) {
+      setAnalysisError(err.message || 'Failed to analyze resume');
+    } finally {
+      setAnalyzing(false);
     }
+  };
+
+  const handleCandidateSubmit = () => {
+    const profile = analysisResult || {
+      name: 'Candidate',
+      role: 'Software Engineer',
+      experience: 'Not specified',
+      skills: ['General IT'],
+      companyStyle: 'Big Tech',
+      resumeText: candidateUrl ? 'Direct entry via URL' : 'No resume uploaded',
+    };
+    localStorage.setItem('interviewProfile', JSON.stringify(profile));
+    router.push('/interview/video');
   };
 
   return (
@@ -174,27 +224,118 @@ export default function LandingPage() {
         </p>
       </footer>
 
-      {/* Modal for Paste URL */}
+      {/* Modal for Candidate Onboarding */}
       {showCandidatePrompt && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div className="glass-card" style={{ padding: 40, width: 440, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, textAlign: 'center' }}>Candidate Access</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center' }}>Paste the interview link provided by your admin below to start directly, or continue to setup manually.</p>
-            <input 
-              className="input-field" 
-              placeholder="Paste Interview URL here..." 
-              value={candidateUrl} 
-              onChange={e => setCandidateUrl(e.target.value)} 
-              style={{ width: '100%', padding: 12 }}
-            />
-            <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
-              <button className="btn-secondary" onClick={() => router.push('/candidate/login')} style={{ flex: 1, padding: 12 }}>Manual Setup</button>
-              <button className="btn-primary" onClick={handleCandidateSubmit} style={{ flex: 1, padding: 12 }}>🚀 Start Interview</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16, overflow: 'auto' }}>
+          <div className="glass-card" style={{ padding: 36, width: 500, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, textAlign: 'center' }}>🎯 Candidate Access</h2>
+            
+            {/* Step 1: URL */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>STEP 1: Interview Link (Optional)</label>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>Paste the interview link provided by your admin to start directly.</p>
+              <input 
+                className="input-field" 
+                placeholder="Paste Interview URL here..." 
+                value={candidateUrl} 
+                onChange={e => setCandidateUrl(e.target.value)} 
+                style={{ width: '100%', padding: 12 }}
+              />
             </div>
-            <button onClick={() => setShowCandidatePrompt(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginTop: 10 }}>Cancel</button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>THEN</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+            </div>
+
+            {/* Step 2: Resume Upload */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>STEP 2: Upload Resume & Certificates</label>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>Upload your resume to get AI-personalized interview questions based on your skills.</p>
+              
+              {/* Resume Upload */}
+              <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) setResumeFile(e.target.files[0]); }} />
+              <button 
+                onClick={() => resumeInputRef.current?.click()} 
+                style={{ 
+                  width: '100%', padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+                  background: resumeFile ? 'rgba(16,185,129,0.1)' : 'var(--bg-secondary)', 
+                  border: resumeFile ? '1px solid var(--accent-green)' : '1px dashed var(--glass-border)',
+                  color: resumeFile ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 500,
+                  display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s'
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{resumeFile ? '✅' : '📄'}</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div>{resumeFile ? resumeFile.name : 'Click to upload Resume (PDF, DOC, TXT)'}</div>
+                  {resumeFile && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{(resumeFile.size / 1024).toFixed(0)} KB • Click to change</div>}
+                </div>
+              </button>
+
+              {/* Certificate Upload */}
+              <input ref={certInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) setCertFiles(Array.from(e.target.files)); }} />
+              <button 
+                onClick={() => certInputRef.current?.click()} 
+                style={{ 
+                  width: '100%', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', marginTop: 8,
+                  background: certFiles.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--bg-secondary)', 
+                  border: certFiles.length > 0 ? '1px solid var(--accent-green)' : '1px dashed var(--glass-border)',
+                  color: certFiles.length > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 12,
+                  display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s'
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{certFiles.length > 0 ? '✅' : '🏆'}</span>
+                {certFiles.length > 0 ? `${certFiles.length} certificate(s) uploaded` : 'Upload Certificates (Optional)'}
+              </button>
+
+              {/* Analyze Button */}
+              {resumeFile && !analysisResult && (
+                <button 
+                  onClick={analyzeResume} 
+                  disabled={analyzing}
+                  className="btn-primary" 
+                  style={{ width: '100%', padding: 12, marginTop: 10, fontSize: 14 }}
+                >
+                  {analyzing ? '🔍 Analyzing with AI...' : '🤖 Analyze Resume with AI'}
+                </button>
+              )}
+
+              {analysisError && <div style={{ color: 'var(--accent-red)', fontSize: 12, marginTop: 6 }}>❌ {analysisError}</div>}
+
+              {/* Analysis Results */}
+              {analysisResult && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-green)', marginBottom: 8 }}>✅ AI Analysis Complete</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div><strong>Name:</strong> {analysisResult.name}</div>
+                    <div><strong>Role:</strong> {analysisResult.role}</div>
+                    <div><strong>Experience:</strong> {analysisResult.experience}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      {(analysisResult.skills || []).slice(0, 8).map((s: string) => (
+                        <span key={s} className="tag tag-cyan" style={{ fontSize: 10 }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <button className="btn-secondary" onClick={() => router.push('/candidate/login')} style={{ flex: 1, padding: 12 }}>Manual Setup</button>
+              <button className="btn-primary" onClick={handleCandidateSubmit} style={{ flex: 1, padding: 12 }}>
+                🚀 {analysisResult ? 'Start Personalized Interview' : 'Start Interview'}
+              </button>
+            </div>
+            <button onClick={() => { setShowCandidatePrompt(false); setAnalysisResult(null); setResumeFile(null); setCertFiles([]); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginTop: 4, fontSize: 13 }}>Cancel</button>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+
+

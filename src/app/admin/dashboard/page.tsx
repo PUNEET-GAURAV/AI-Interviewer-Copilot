@@ -623,9 +623,73 @@ export default function AdminDashboardPage() {
 
             {/* Recent Candidates Table */}
             <div className="glass-card" style={{ padding: 28 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>🧑‍💻 Recent Candidates</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>🧑‍💻 Candidates List</h3>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Search by required skills (comma separated)..." 
+                    className="input-field"
+                    style={{ width: 300, padding: '8px 14px', fontSize: 13 }}
+                    onChange={e => {
+                        const val = e.target.value.toLowerCase();
+                        if (val) {
+                          const searchTags = val.split(',').map(s => s.trim()).filter(Boolean);
+                          const filtered = history.filter((h: any) => {
+                             if (!h.candidateProfile?.skills) return false;
+                             const candidateSkills = h.candidateProfile.skills.map((s: string) => s.toLowerCase());
+                             return searchTags.every(tag => candidateSkills.some((cs: string) => cs.includes(tag)));
+                          });
+                          setHistory(filtered);
+                        } else {
+                          // reset
+                          const saved = localStorage.getItem('interviewHistory');
+                          if (saved) {
+                             const parsed = JSON.parse(saved);
+                             setHistory(Array.isArray(parsed) ? parsed : []);
+                          }
+                        }
+                    }}
+                  />
+                  <select 
+                    className="select-field"
+                    style={{ width: 180, padding: '8px 14px', fontSize: 13 }}
+                    onChange={e => {
+                        const val = e.target.value;
+                        const saved = localStorage.getItem('interviewHistory');
+                        let baseHistory = [];
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            baseHistory = Array.isArray(parsed) ? parsed : [];
+                        }
+                        if (val === 'All') {
+                            setHistory(baseHistory);
+                        } else {
+                            const expMap: Record<string, string[]> = {
+                                '0-2 years': ['Intern', 'Entry Level', '0-2 years', '0-1', '1-2'],
+                                '3-5 years': ['Mid Level', '3-5 years', '3-4', '4-5'],
+                                '5+ years': ['Senior', 'Lead', 'Principal', '5+ years', '5+', '10+']
+                            };
+                            const checkTerms = expMap[val] || [];
+                            const filtered = baseHistory.filter((h: any) => {
+                                 if (!h.candidateProfile?.experience) return false;
+                                 const exp = h.candidateProfile.experience.toLowerCase();
+                                 return checkTerms.some(term => exp.includes(term.toLowerCase())) || exp.includes(val.toLowerCase());
+                            });
+                            setHistory(filtered);
+                        }
+                    }}
+                  >
+                    <option value="All">All Experience</option>
+                    <option value="0-2 years">0-2 years</option>
+                    <option value="3-5 years">3-5 years</option>
+                    <option value="5+ years">5+ years</option>
+                  </select>
+                </div>
+              </div>
+              
               {history.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 14 }}>No candidates have completed interviews yet.</div>
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 14 }}>No candidates match this criteria.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Table Header */}
@@ -638,7 +702,7 @@ export default function AdminDashboardPage() {
                     <div style={{ textAlign: 'right' }}>Score</div>
                   </div>
                   {/* Table Rows */}
-                  {[...history].reverse().slice(0, 10).map((h, i) => (
+                  {[...history].reverse().slice(0, 50).map((h, i) => (
                     <div key={i} className="glass-card-sm" style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 1fr', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.2s ease' }} 
                          onClick={() => setSelectedCandidate(h)}
                          onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(79,70,229,0.3)')}
