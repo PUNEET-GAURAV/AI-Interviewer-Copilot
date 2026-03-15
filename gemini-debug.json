@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "[\n  {\n    \"question\": \"Welcome! To start, could you tell us what initially drew you to a career in Information Technology, and what aspects of working in an enterprise IT environment particularly appeal to you?\",\n    \"category\": \"Motivation & Role Understanding\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"career interest\", \"understanding of IT roles\", \"enterprise environment appeal\"]\n  },\n  {\n    \"question\": \"In a general IT support scenario, imagine a user reports that they can't print to any network printer. Walk us through the very first steps you would take to begin diagnosing this issue.\",\n    \"category\": \"Basic Troubleshooting\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"problem diagnosis\", \"network basics\", \"systematic approach\"]\n  },\n  {\n    \"question\": \"Working in IT often involves explaining technical concepts to non-technical colleagues. Can you describe your approach to communicating a simple technical solution or instruction clearly and effectively to someone without an IT background?\",\n    \"category\": \"Communication Skills\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\"clear communication\", \"empathy\", \"simplification of technical terms\", \"active listening\"]\n  }\n]"
+            "text": "[\n  {\n    \"question\": \"Thanks for coming in today. To start, could you share a bit about what specifically attracted you to a Nutrition Consultant role, particularly within an enterprise organization like ours, and what you believe makes this type of environment unique for a nutrition professional?\",\n    \"category\": \"Motivation & Role Understanding\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"career motivation\",\n      \"understanding enterprise context\",\n      \"nutrition consulting role\"\n    ]\n  },\n  {\n    \"question\": \"When you think about working with clients, how do you typically begin to assess their individual nutritional needs, and what's your initial approach to helping them define achievable health goals?\",\n    \"category\": \"Client Assessment & Goal Setting\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"client needs assessment\",\n      \"goal setting\",\n      \"client communication\"\n    ]\n  },\n  {\n    \"question\": \"We noticed 'General IT' listed in your skills. In an enterprise environment, technology often plays a significant role. How do you envision leveraging general IT tools or digital platforms to enhance your work as a Nutrition Consultant, perhaps in terms of client management, education, or data tracking?\",\n    \"category\": \"Technology Integration & Vision\",\n    \"difficulty\": \"easy\",\n    \"expectedTopics\": [\n      \"technology in nutrition\",\n      \"digital tools\",\n      \"client management systems\",\n      \"data tracking\"\n    ]\n  }\n]"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 3372,
-    "candidatesTokenCount": 267,
-    "totalTokenCount": 4340,
+    "promptTokenCount": 3138,
+    "candidatesTokenCount": 331,
+    "totalTokenCount": 4428,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 3372
+        "tokenCount": 3138
       }
     ],
-    "thoughtsTokenCount": 701
+    "thoughtsTokenCount": 959
   },
   "modelVersion": "gemini-2.5-flash",
-  "responseId": "04W2ab6qEOPdqfkP--XjoAs"
+  "responseId": "d5K2acfyLYyqjuMP28ummQk"
 }

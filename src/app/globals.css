@@ -20,10 +20,10 @@
 }
 
 :root.light {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #e2e8f0;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
+  --bg-primary: linear-gradient(135deg, #e0f2fe 0%, #dcfce7 100%);
+  --bg-secondary: rgba(255, 255, 255, 0.4);
+  --bg-card: rgba(255, 255, 255, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.8);
   --accent-cyan: #0284c7;
   --accent-blue: #4338ca;
   --accent-purple: #7c3aed;
@@ -33,9 +33,9 @@
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --border-color: #cbd5e1;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --border-color: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.8);
 }
 
 * {

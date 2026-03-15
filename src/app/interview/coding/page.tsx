@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { saveVideoToIDB } from '@/lib/idb';
 
 const CODING_PROBLEMS = [
   {
@@ -88,27 +89,73 @@ export default function CodingInterviewPage() {
   const [warningVisible, setWarningVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [isFinishing, setIsFinishing] = useState(false);
 
-  // Start webcam
+  // Start webcam and screen share
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      // 1. Get Webcam + Mic
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      
+      // 2. Get Screen Share
+      let screenStream;
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      } catch (e) {
+        console.warn('Screen share denied or cancelled. Continuing with just camera.');
+        // If user denies screen share, we only record camera
       }
+      
+      // 3. Combine Streams for recording
+      const combinedTracks = [
+        ...cameraStream.getVideoTracks(),
+        ...cameraStream.getAudioTracks(),
+      ];
+      
+      if (screenStream) {
+        // We prioritize recording the screen track if available, falling back to camera if not
+        combinedTracks.push(...screenStream.getVideoTracks());
+        if (screenStream.getAudioTracks().length > 0) {
+           combinedTracks.push(...screenStream.getAudioTracks());
+        }
+      }
+      
+      const combinedStream = new MediaStream(combinedTracks);
+      streamRef.current = combinedStream;
+
+      // 4. Show only the webcam in the mini-player for the user to see themselves
+      if (videoRef.current) {
+        videoRef.current.srcObject = new MediaStream(cameraStream.getVideoTracks());
+      }
+      
+      // 5. Setup MediaRecorder
+      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+      mediaRecorderRef.current = recorder;
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      
+      recorder.start(1000); // Collect data every second
+      
       setCameraOn(true);
       setCameraError('');
+      
     } catch (err: any) {
-      setCameraError('Camera access denied. Video proctoring disabled.');
+      setCameraError('Camera/Mic access denied. Video proctoring disabled.');
       console.error('Camera error:', err);
     }
   }, []);
 
-  // Stop webcam
+  // Stop webcam and recording
   const stopCamera = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -183,6 +230,66 @@ export default function CodingInterviewPage() {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const finishInterview = async () => {
+    setIsFinishing(true);
+    setSessionActive(false);
+    stopCamera();
+    
+    // Create final video blob from chunks
+    let videoId = null;
+    if (chunksRef.current.length > 0) {
+      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+      videoId = `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      
+      try {
+        await saveVideoToIDB(videoId, blob);
+        console.log('Video saved to IndexedDB:', videoId);
+      } catch (err) {
+        console.error('Failed to save video', err);
+        videoId = null;
+      }
+    }
+    
+    // Save record to interviewHistory
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    const record = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      candidateProfile: {
+        name: user?.name || 'Anonymous Coder',
+        email: user?.email || '',
+        role: 'Software Engineer'
+      },
+      interviewType: 'video', // we consider screen share logic as 'video' type
+      overallScore: result ? result.score * 10 : 0, // Code score is out of 10, align to 100 for admin dashboard
+      technicalAvg: result ? result.score * 10 : 0,
+       problemSolvingAvg: result ? result.score * 10 : 0,
+      communicationAvg: 100, // N/A for coding
+      scores: [
+        {
+          question: selectedProblem.title,
+          answer: code,
+          feedback: result?.feedback || 'No feedback requested',
+          overall: result ? result.score * 10 : 0,
+          technicalDepth: result ? result.codeQuality?.efficiency * 10 : 0,
+          clarity: result ? result.codeQuality?.readability * 10 : 0
+        }
+      ],
+      strengths: result?.isOptimal ? ['Optimal Solution', 'Good Code Quality'] : [],
+      improvements: result?.errors || [],
+      videoId // Attach the video ID to the record!
+    };
+    
+    const saved = localStorage.getItem('interviewHistory');
+    const history = saved ? JSON.parse(saved) : [];
+    history.unshift(record);
+    localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
+    
+    router.push('/');
   };
 
   const difficultyColor = (d: string) => {
@@ -273,8 +380,11 @@ export default function CodingInterviewPage() {
             <option value="cpp">C++</option>
             <option value="typescript">TypeScript</option>
           </select>
-          <button className="btn-primary" onClick={submitCode} disabled={analyzing} style={{ padding: '8px 20px', fontSize: 13 }}>
-            {analyzing ? '🔍 Analyzing...' : '▶ Submit & Analyze'}
+          <button className="btn-secondary" onClick={submitCode} disabled={analyzing} style={{ padding: '8px 20px', fontSize: 13 }}>
+            {analyzing ? '🔍 Analyzing...' : '▶ Analyze'}
+          </button>
+          <button className="btn-primary" onClick={finishInterview} disabled={isFinishing || analyzing} style={{ padding: '8px 20px', fontSize: 13, background: 'linear-gradient(135deg, var(--accent-green), var(--accent-cyan))' }}>
+            {isFinishing ? 'Saving...' : '🏁 End Interview'}
           </button>
         </div>
       </nav>

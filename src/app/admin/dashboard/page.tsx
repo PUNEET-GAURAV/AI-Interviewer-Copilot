@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getVideoFromIDB } from '@/lib/idb';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/firebase/AuthContext';
 
@@ -83,6 +84,10 @@ export default function AdminDashboardPage() {
   const [enableFillerAnalysis, setEnableFillerAnalysis] = useState(true);
   const [evaluationStrictness, setEvaluationStrictness] = useState('balanced');
   const [generatedLink, setGeneratedLink] = useState('');
+  
+  // Video playback state
+  const [playingVideoBlob, setPlayingVideoBlob] = useState<string | null>(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
   
   // Compulsory Intro Questions
   const [introQuestions, setIntroQuestions] = useState<string[]>([]);
@@ -802,6 +807,33 @@ export default function AdminDashboardPage() {
                   >
                     ⬇️ Download Q&A Report (.txt)
                   </button>
+                  
+                  {selectedCandidate.videoId && (
+                        <button 
+                          onClick={async () => {
+                            try {
+                              setIsVideoLoading(true);
+                              const blob = await getVideoFromIDB(selectedCandidate.videoId);
+                              if (blob) {
+                                const url = URL.createObjectURL(blob);
+                                setPlayingVideoBlob(url);
+                              } else {
+                                alert('Video recording not found or expired. It may have been cleared from local browser storage.');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                              alert('Error loading video recording.');
+                            } finally {
+                              setIsVideoLoading(false);
+                            }
+                          }}
+                          className="btn-primary"
+                          style={{ padding: '8px 16px', fontSize: 13, background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-purple))' }}
+                          disabled={isVideoLoading}
+                        >
+                          {isVideoLoading ? '⏳ Loading...' : '▶️ Play Recording'}
+                        </button>
+                  )}
                 </div>
               </div>
 
@@ -874,6 +906,39 @@ export default function AdminDashboardPage() {
                 </>
               )}
             </div>
+            
+            {/* Video Playback Overlay */}
+            {playingVideoBlob && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '100%', maxWidth: 1000, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 24 }}>▶️</span>
+                        <h3 style={{ color: 'white', margin: 0, fontSize: 18 }}>Interview Recording: {selectedCandidate.candidateProfile?.name}</h3>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        URL.revokeObjectURL(playingVideoBlob);
+                        setPlayingVideoBlob(null);
+                      }} 
+                      style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Close Video
+                    </button>
+                  </div>
+                  <video 
+                    src={playingVideoBlob} 
+                    controls 
+                    autoPlay 
+                    style={{ width: '100%', borderRadius: 12, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', background: '#000' }} 
+                  />
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 12, textAlign: 'center' }}>
+                      Stored locally via IndexedDB. Video will be unavailable if browser storage is cleared.
+                  </div>
+                </div>
+              </div>
+            )}
+            
           </div>
         )}
       </div>
