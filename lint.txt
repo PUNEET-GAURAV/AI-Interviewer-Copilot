@@ -1,0 +1,227 @@
+﻿
+> ai-interview-copilot@0.1.0 lint
+> eslint
+
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\admin\dashboard\page.tsx
+   39:10   warning  'isAuthorized' is assigned a value but never used                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  124:30   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  221:30   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  223:496  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  238:11   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  638:63   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  674:69   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  791:627  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  839:52   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  842:137  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  842:198  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\admin\login\page.tsx
+  15:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  25:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  76:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\api\analyze-resume\route.ts
+  67:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\api\generate-questions\route.ts
+   60:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:7   error  A `require()` style import is forbidden   @typescript-eslint/no-require-imports
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\candidate\interview\[id]\page.tsx
+   36:26  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\candidate\interview\[id]\page.tsx:36:26
+  34 |       if (savedUser) {
+  35 |         const parsed = JSON.parse(savedUser);
+> 36 |         if (parsed.name) setName(parsed.name);
+     |                          ^^^^^^^ Avoid calling setState() directly within an effect
+  37 |         if (parsed.email) setEmail(parsed.email);
+  38 |         if (parsed.role === 'candidate') {
+  39 |            // We are good  react-hooks/set-state-in-effect
+   71:9   error    'certFilesB64' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        prefer-const
+  126:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\candidate\login\page.tsx
+  15:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  25:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  69:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\candidate\profile\page.tsx
+  63:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\candidate\profile\page.tsx:63:13
+  61 |     const profileStr = localStorage.getItem('candidateProfile');
+  62 |     if (profileStr) {
+> 63 |       try { setData(JSON.parse(profileStr)); } catch { /* ignore */ }
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  64 |     } else if (userStr) {
+  65 |       try {
+  66 |         const u = JSON.parse(userStr);  react-hooks/set-state-in-effect
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\dashboard\page.tsx
+  21:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\dashboard\page.tsx:21:7
+  19 |     if (user) {
+  20 |       const parsed = JSON.parse(user);
+> 21 |       setUserName(parsed.name || parsed.email?.split('@')[0] || 'Candidate');
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  22 |     }
+  23 |     const saved = localStorage.getItem('interviewHistory');
+  24 |     if (saved) {  react-hooks/set-state-in-effect
+  47:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\enterprise\page.tsx
+  34:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\mobile-cam\page.tsx
+  22:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:26  warning  'id' is defined but never used            @typescript-eslint/no-unused-vars
+  65:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\results\page.tsx
+  69:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\results\page.tsx:69:7
+  67 |       const parsed = JSON.parse(saved);
+  68 |       if (!parsed || typeof parsed !== 'object') { router.push('/interview/setup'); return; }
+> 69 |       setResult(parsed);
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  70 |     } catch {
+  71 |       router.push('/interview/setup');
+  72 |     }  react-hooks/set-state-in-effect
+  91:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\session\page.tsx
+  212:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\setup\page.tsx
+  22:10  warning  'companyStyle' is assigned a value but never used                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  22:24  warning  'setCompanyStyle' is assigned a value but never used                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  74:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\interview\video\page.tsx
+    19:37   warning  'BehavioralReport' is defined but never used                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+    93:16   warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   119:23   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   175:21   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   186:26   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   196:28   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   249:6    warning  React Hook useEffect has missing dependencies: 'handleIdentityViolation' and 'handleLookAwayViolation'. Either include them or remove the dependency array                                                                                                                               react-hooks/exhaustive-deps
+   291:17   warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   341:23   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   867:19   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   965:187  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  1076:17   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  1080:11   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                      @typescript-eslint/ban-ts-comment
+  1113:29   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  1270:11   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\layout.tsx
+  23:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\leaderboard\page.tsx
+  33:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\login\page.tsx
+  30:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\page.tsx
+   19:56  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   71:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   96:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  109:35  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  116:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\register\page.tsx
+  29:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\skills\page.tsx
+   99:40  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\skills\page.tsx:99:40
+   97 |     if (saved) {
+   98 |       const result: InterviewResult = JSON.parse(saved);
+>  99 |       if (result.skillMap?.length > 0) setSkills(result.skillMap);
+      |                                        ^^^^^^^^^ Avoid calling setState() directly within an effect
+  100 |       setRole(result.candidateProfile?.role || 'Software Engineer');
+  101 |     }
+  102 |   }, []);  react-hooks/set-state-in-effect
+  112:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\app\tips\page.tsx
+  64:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\components\ThemeToggle.tsx
+  12:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\components\ThemeToggle.tsx:12:7
+  10 |     const savedTheme = localStorage.getItem('theme');
+  11 |     if (savedTheme === 'light') {
+> 12 |       setIsLight(true);
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  13 |       document.documentElement.classList.add('light');
+  14 |     }
+  15 |   }, []);  react-hooks/set-state-in-effect
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\lib\firebase\AuthContext.tsx
+  26:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\lib\firebase\AuthContext.tsx:26:7
+  24 |     if (!auth) {
+  25 |       // Firebase not initialized
+> 26 |       setLoading(false);
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |       return;
+  28 |     }
+  29 |  react-hooks/set-state-in-effect
+
+C:\Users\puneet\Desktop\SDS hackathon\ai-interview-copilot\src\lib\firebase\config.ts
+  37:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 66 problems (36 errors, 30 warnings)
+  1 error and 1 warning potentially fixable with the `--fix` option.
+

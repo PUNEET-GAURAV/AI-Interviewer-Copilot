@@ -134,8 +134,8 @@ export default function AdminDashboardPage() {
 
           setAnalytics({
             total: parsed.length,
-            avgScore: parsed.length ? Math.round(scoreSum / parsed.length) : 0,
-            passRate: parsed.length ? Math.round((passCount / parsed.length) * 100) : 0,
+            avgScore: parsed.length ? (Math.round(scoreSum / parsed.length) || 0) : 0,
+            passRate: parsed.length ? (Math.round((passCount / parsed.length) * 100) || 0) : 0,
             videoCount,
             byRole
           });
@@ -582,7 +582,7 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
               {[
                 { label: 'Total Interviews', val: analytics.total, icon: '📋', color: 'var(--accent-cyan)' },
-                { label: 'Avg Score', val: `${analytics.avgScore}/100`, icon: '📊', color: 'var(--accent-green)' },
+                { label: 'Avg Score', val: `${analytics.avgScore}/10`, icon: '📊', color: 'var(--accent-green)' },
                 { label: 'Pass Rate', val: `${analytics.passRate}%`, icon: '✅', color: 'var(--accent-amber)' },
                 { label: 'Video Interviews', val: analytics.videoCount, icon: '🎥', color: 'var(--accent-blue)' },
               ].map(s => (
@@ -598,7 +598,7 @@ export default function AdminDashboardPage() {
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>📈 Score Distribution by Role</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {Object.entries(analytics.byRole).sort((a,b) => b[1].count - a[1].count).map(([role, stats]) => {
-                  const avg = Math.round(stats.scoreSum / stats.count);
+                  const avg = Math.round(stats.scoreSum / stats.count) || 0;
                   return (
                     <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       <span style={{ width: 160, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>{role}</span>
@@ -611,7 +611,7 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 700, color: avg >= 75 ? 'var(--accent-green)' : 'var(--accent-amber)', width: 36 }}>{avg}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 50 }}>{stats.count} tests</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 50 }}>{stats.count || 0} tests</span>
                     </div>
                   );
                 })}
@@ -727,8 +727,8 @@ export default function AdminDashboardPage() {
                           ⬇️ PDF/TXT
                         </button>
                       </div>
-                      <div style={{ textAlign: 'right', fontWeight: 800, fontSize: 14, color: h.overallScore >= 75 ? 'var(--accent-green)' : h.overallScore >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>
-                        {h.overallScore}
+                      <div style={{ textAlign: 'right', fontWeight: 800, fontSize: 14, color: (h.overallScore || 0) >= 75 ? 'var(--accent-green)' : (h.overallScore || 0) >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>
+                        {h.overallScore || 0}
                       </div>
                     </div>
                   ))}
@@ -788,7 +788,7 @@ export default function AdminDashboardPage() {
                   ))}
                   <button 
                     onClick={() => {
-                      const content = `Interview Report - ${selectedCandidate.candidateProfile?.name || 'Anonymous'}\nRole: ${selectedCandidate.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(selectedCandidate.timestamp).toLocaleString()}\nOverall Score: ${selectedCandidate.overallScore}/100\nTechnical: ${selectedCandidate.technicalAvg} | Communication: ${selectedCandidate.communicationAvg} | Problem Solving: ${selectedCandidate.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${selectedCandidate.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/100 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${selectedCandidate.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${selectedCandidate.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
+                      const content = `Interview Report - ${selectedCandidate.candidateProfile?.name || 'Anonymous'}\nRole: ${selectedCandidate.candidateProfile?.role || 'Unknown'}\nDate: ${new Date(selectedCandidate.timestamp).toLocaleString()}\nOverall Score: ${selectedCandidate.overallScore}/10\nTechnical: ${selectedCandidate.technicalAvg} | Communication: ${selectedCandidate.communicationAvg} | Problem Solving: ${selectedCandidate.problemSolvingAvg}\n\n--------------------------------------------------\nQUESTIONS & RESPONSES\n--------------------------------------------------\n\n${selectedCandidate.scores?.map((s: any, i: number) => `Q${i + 1}: ${s.question}\n\nCandidate Answer:\n${s.answer}\n\n---\nFeedback: ${s.feedback}\nScore: ${s.overall}/10 (Tech: ${s.technicalDepth}, Clarity: ${s.clarity})`).join('\n\n\n') || 'No Q&A data available.'}\n\n--------------------------------------------------\nSTRENGTHS\n${selectedCandidate.strengths?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\nIMPROVEMENTS\n${selectedCandidate.improvements?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n`;
                       const blob = new Blob([content], { type: 'text/plain' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -841,7 +841,7 @@ export default function AdminDashboardPage() {
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>Q: {s.question}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontStyle: 'italic', lineHeight: 1.4 }}>A: "{s.answer.slice(0, 150)}{s.answer.length > 150 ? '...' : ''}"</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: 'var(--accent-cyan)' }}>Score: {s.overall}/100</span>
+                      <span style={{ fontSize: 12, color: 'var(--accent-cyan)' }}>Score: {s.overall}/10</span>
                       <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 6 }}>{s.feedback.slice(0, 50)}...</span>
                     </div>
                   </div>

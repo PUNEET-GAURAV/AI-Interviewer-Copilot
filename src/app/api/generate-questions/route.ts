@@ -14,6 +14,7 @@ export async function POST(req: Request) {
 
     const numQuestions = round === 'wrapup' ? 1 : 3;
     const difficultyMap: Record<string, string> = {
+      intro: 'easy',
       technical: 'medium',
       advanced: 'hard',
       behavioral: 'medium',
@@ -26,16 +27,23 @@ Generate exactly ${numQuestions} highly specific, logical, and conversational in
 
 Candidate Skills: ${profile.skills?.join(', ') || 'General IT'}
 Target Interview Round: ${round}
+Target Difficulty Level: ${targetDifficulty.toUpperCase()}
 Company Style: ${profile.companyStyle || 'Enterprise'}
 ${profile.resumeText ? `\nCandidate's Extracted Resume & Certificates Text:\n"""\n${profile.resumeText}\n"""\n` : ''}
-I have provided the candidate's Resume and/or Certificates as attached documents/images or extracted text in this request.
-You MUST deep analyze their resume projects, past roles, and certificates. Focus heavily on generating role-specific technical, analytical, and managerial questions targeting the exact claims, projects, and skills mentioned in these documents. Do not ask generic questions if resume details are available.
 
-CRITICAL RULES:
+I have provided the candidate's Resume and/or Certificates as attached documents/images or extracted text in this request.
+You MUST deep analyze their resume projects, past roles, and certificates. Focus heavily on generating role-specific questions targeting the exact claims, projects, and skills mentioned.
+
+CRITICAL PROGRESSION RULES:
+- If round="intro", ask introductory and foundational concept questions. 
+- If round="technical", ask medium-depth implementation and problem-solving questions.
+- If round="advanced", ask highly advanced, senior-level architectural, system design, or managerial/leadership scenarios depending on their reported "${profile.experience}".
+- Scale the exact technical difficulty dynamically to strictly match their experience level and projects stated.
+
+CRITICAL FORMATTING RULES:
 1. Formulate questions exactly as a real human would speak them in a live conversation.
-2. Use logical, scenario-based framing referencing their specific resume details if available (e.g., "I see you built X project using Node.js mentioned in your resume. How did you handle...").
-3. DO NOT sound like a robotic exam. Ask follow-up-style logical questions.
-4. Scale the technical difficulty strictly to their experience level and projects stated.
+2. Use logical, scenario-based framing referencing their specific resume details if available.
+3. DO NOT sound like a robotic exam.
 
 Return the result as a JSON array ONLY, exactly matching this schema:
 [

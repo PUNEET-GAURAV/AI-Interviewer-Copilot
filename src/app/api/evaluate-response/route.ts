@@ -28,7 +28,7 @@ CRITICAL RULES FOR EVALUATION:
 3. The "feedback" string MUST be written in the first person, as if you are speaking directly to them (e.g., "I liked your point about X, but you completely missed Y, which is a major red flag for this role." or "Your logic breaks down when scenario Z happens.").
 4. Point out exact logical flaws, correct them, or praise specific deep insights if they earned it.
 
-Provide scores (0-100) in JSON format ONLY:
+Provide scores (1-10) in JSON format ONLY:
 {
   "technicalDepth": <score>,
   "relevance": <score>,

@@ -45,7 +45,7 @@ function DimensionBar({ label, icon, score, weight }: { label: string; icon: str
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color }}>{score}/100</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color }}>{score}/10</span>
         </div>
         <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-secondary)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 3, width: `${score}%`, background: color, transition: 'width 0.8s ease' }} />
@@ -282,7 +282,7 @@ export default function ResultsPage() {
                   background: s.overall >= 80 ? 'rgba(16,185,129,0.15)' : s.overall >= 60 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
                   color: s.overall >= 80 ? 'var(--accent-green)' : s.overall >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)',
                 }}>
-                  {s.overall}/100
+                  {s.overall}/10
                 </div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', background: 'var(--bg-secondary)', padding: 10, borderRadius: 6, marginBottom: 10, lineHeight: 1.5, maxHeight: 60, overflow: 'hidden' }}>

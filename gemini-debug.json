@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "[\n  {\n    \"question\": \"Given our enterprise environment, our products often involve complex workflows and diverse user groups. Could you walk me through your typical approach to understanding user needs and defining a problem space when starting a new UX project in such a setting?\",\n    \"category\": \"UX Process & User Research\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\"user research methods\", \"problem definition\", \"stakeholder analysis\", \"journey mapping\", \"persona development\"]\n  },\n  {\n    \"question\": \"In an enterprise company, collaboration across different teams like engineering, product management, and various business stakeholders is absolutely crucial. How do you typically ensure your design solutions are not only user-centered but also technically feasible and aligned with the broader business objectives?\",\n    \"category\": \"Collaboration & Design Strategy\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\"cross-functional collaboration\", \"communication skills\", \"balancing constraints\", \"stakeholder management\", \"design iteration\"]\n  },\n  {\n    \"question\": \"We often work on products that have a significant impact on many users. Could you describe a time when you had to make a critical design decision with incomplete information or under tight constraints? How did you approach that situation, and how did you measure the success or impact of your decision?\",\n    \"category\": \"Problem Solving & Design Impact\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\"decision-making\", \"risk mitigation\", \"iterative design\", \"metrics and KPIs\", \"user feedback\", \"adaptability\"]\n  }\n]"
+            "text": "[\n  {\n    \"question\": \"Alright, let's talk about efficiency. Imagine you're working on a feature for a popular social media platform. Users want to see a 'trending topics' list that needs to be updated very frequently, showing the top K most discussed topics over a rolling time window – say, the last five minutes. How would you go about designing a system to efficiently track these topics and retrieve the top K, keeping both performance and memory usage in mind? What specific data structures would you leverage, and why would those be your choices?\",\n    \"category\": \"Algorithms & Data Structures\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Hash Map\",\n      \"Min/Max Heap\",\n      \"Sliding Window\",\n      \"Time/Space Complexity\",\n      \"Trade-offs\"\n    ]\n  },\n  {\n    \"question\": \"Okay, let's shift to design. Think about building a new API for an e-commerce platform. Your task is to design the core functionality for a customer's shopping cart. How would you structure the classes and interfaces for this? I'm thinking about operations like adding items, removing items, updating quantities, and calculating the total. Beyond just getting it to work, how would you ensure your design is flexible and extensible, so it can easily accommodate new features down the road, like applying different discount types or handling various product categories?\",\n    \"category\": \"Object-Oriented Design\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Classes\",\n      \"Interfaces\",\n      \"Encapsulation\",\n      \"Polymorphism\",\n      \"Inheritance vs. Composition\",\n      \"Design Patterns\",\n      \"API Design Principles\",\n      \"Extensibility\"\n    ]\n  },\n  {\n    \"question\": \"Now, let's talk about real-world challenges. You've deployed a new backend service that's designed to process user requests in parallel to improve responsiveness. After it goes live, you start noticing something odd: some requests process perfectly fine, but others seem to occasionally hang indefinitely or return incorrect data, even though the core logic for each request seems sound. You check the logs, but there aren't any clear error messages, just these long delays for specific requests. How would you approach debugging this kind of intermittent issue in a concurrent system? What are some common culprits you'd investigate, and what tools or techniques would you use to really pinpoint the root cause?\",\n    \"category\": \"Debugging & Concurrency\",\n    \"difficulty\": \"medium\",\n    \"expectedTopics\": [\n      \"Race Conditions\",\n      \"Deadlocks\",\n      \"Resource Contention\",\n      \"Thread Safety\",\n      \"Mutexes/Semaphores\",\n      \"Logging Best Practices\",\n      \"Monitoring Tools\",\n      \"Profiling\",\n      \"Systematic Debugging\"\n    ]\n  }\n]"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 3112,
-    "candidatesTokenCount": 337,
-    "totalTokenCount": 7047,
+    "promptTokenCount": 383,
+    "candidatesTokenCount": 629,
+    "totalTokenCount": 2863,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 3112
+        "tokenCount": 383
       }
     ],
-    "thoughtsTokenCount": 3598
+    "thoughtsTokenCount": 1851
   },
   "modelVersion": "gemini-2.5-flash",
-  "responseId": "4Wu2abXUE_rw4-EPh-nCsAs"
+  "responseId": "8W62afT7OKCGjuMPsqjy8Aw"
 }

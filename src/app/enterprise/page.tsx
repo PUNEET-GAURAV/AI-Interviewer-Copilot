@@ -51,7 +51,7 @@ export default function EnterpriseDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
           {[
             { label: 'Total Candidates', val: MOCK_CANDIDATES.length.toString(), icon: '👥', color: 'var(--accent-cyan)' },
-            { label: 'Avg Score', val: `${avgScore}/100`, icon: '📊', color: 'var(--accent-green)' },
+            { label: 'Avg Score', val: `${avgScore}/10`, icon: '📊', color: 'var(--accent-green)' },
             { label: 'Hire Rate', val: `${hireRate}%`, icon: '✅', color: 'var(--accent-amber)' },
             { label: 'Roles', val: String(new Set(MOCK_CANDIDATES.map(c => c.role)).size), icon: '💼', color: 'var(--accent-blue)' },
           ].map(s => (

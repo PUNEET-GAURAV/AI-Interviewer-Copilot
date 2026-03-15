@@ -51,7 +51,7 @@ function RadarChart({ skills, size = 300 }: { skills: { skill: string; level: nu
     ctx.beginPath();
     for (let i = 0; i < n; i++) {
       const angle = i * angleStep - Math.PI / 2;
-      const r = (skills[i].level / 100) * maxR;
+      const r = (skills[i].level / 10) * maxR;
       if (i === 0) ctx.moveTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
       else ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
     }
@@ -68,7 +68,7 @@ function RadarChart({ skills, size = 300 }: { skills: { skill: string; level: nu
     // Dots
     for (let i = 0; i < n; i++) {
       const angle = i * angleStep - Math.PI / 2;
-      const r = (skills[i].level / 100) * maxR;
+      const r = (skills[i].level / 10) * maxR;
       ctx.beginPath();
       ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), 4, 0, 2 * Math.PI);
       ctx.fillStyle = '#00d4ff';
@@ -80,12 +80,12 @@ function RadarChart({ skills, size = 300 }: { skills: { skill: string; level: nu
 }
 
 const DEFAULT_SKILLS = [
-  { skill: 'Problem Solving', level: 78 },
-  { skill: 'System Design', level: 85 },
-  { skill: 'Communication', level: 72 },
-  { skill: 'Technical Depth', level: 88 },
-  { skill: 'Code Quality', level: 80 },
-  { skill: 'Adaptability', level: 75 },
+  { skill: 'Problem Solving', level: 7.8 },
+  { skill: 'System Design', level: 8.5 },
+  { skill: 'Communication', level: 7.2 },
+  { skill: 'Technical Depth', level: 8.8 },
+  { skill: 'Code Quality', level: 8.0 },
+  { skill: 'Adaptability', level: 7.5 },
 ];
 
 export default function SkillsPage() {
@@ -129,7 +129,7 @@ export default function SkillsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="glass-card" style={{ padding: 20 }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Average</div>
-                <div className="gradient-text" style={{ fontSize: 28, fontWeight: 800 }}>{avgLevel}%</div>
+                <div className="gradient-text" style={{ fontSize: 28, fontWeight: 800 }}>{avgLevel}/10</div>
               </div>
               <div className="glass-card" style={{ padding: 20 }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Top Skill</div>
@@ -140,10 +140,10 @@ export default function SkillsPage() {
               <div key={sk.skill} className="glass-card-sm" style={{ padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{sk.skill}</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: sk.level >= 80 ? 'var(--accent-green)' : sk.level >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>{sk.level}%</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: sk.level >= 8 ? 'var(--accent-green)' : sk.level >= 6 ? 'var(--accent-amber)' : 'var(--accent-red)' }}>{sk.level}/10</span>
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-bar-fill" style={{ width: `${sk.level}%`, background: sk.level >= 80 ? 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))' : 'linear-gradient(90deg, var(--accent-amber), var(--accent-cyan))' }} />
+                  <div className="progress-bar-fill" style={{ width: `${sk.level * 10}%`, background: sk.level >= 8 ? 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))' : 'linear-gradient(90deg, var(--accent-amber), var(--accent-cyan))' }} />
                 </div>
               </div>
             ))}

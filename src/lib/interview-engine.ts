@@ -88,34 +88,37 @@ export function calculateOverallResult(
   profile: CandidateProfile,
   scores: QuestionScore[]
 ): InterviewResult {
-  const technicalAvg = avg(scores.map(s => s.technicalDepth));
-  const communicationAvg = avg(scores.map(s => s.clarity));
-  const problemSolvingAvg = avg(scores.map(s => s.completeness));
-  const architectureAvg = avg(scores.map(s => s.relevance));
+  // Normalize legacy 100-scale scores down to 10-scale just in case
+  const norm = (v: number) => v > 10 ? v / 10 : v;
+  
+  const technicalAvg = avg(scores.map(s => norm(s.technicalDepth)));
+  const communicationAvg = avg(scores.map(s => norm(s.clarity)));
+  const problemSolvingAvg = avg(scores.map(s => norm(s.completeness)));
+  const architectureAvg = avg(scores.map(s => norm(s.relevance)));
   const overallScore = Math.round((technicalAvg + communicationAvg + problemSolvingAvg + architectureAvg) / 4);
 
   const strengths: string[] = [];
   const improvements: string[] = [];
 
-  if (technicalAvg >= 80) strengths.push('Strong technical knowledge and depth');
+  if (technicalAvg >= 8) strengths.push('Strong technical knowledge and depth');
   else improvements.push('Deepen technical understanding of core concepts');
 
-  if (communicationAvg >= 80) strengths.push('Clear and articulate communication');
+  if (communicationAvg >= 8) strengths.push('Clear and articulate communication');
   else improvements.push('Improve clarity and structure in explanations');
 
-  if (problemSolvingAvg >= 80) strengths.push('Comprehensive problem-solving approach');
+  if (problemSolvingAvg >= 8) strengths.push('Comprehensive problem-solving approach');
   else improvements.push('Provide more complete solutions with edge cases');
 
-  if (architectureAvg >= 80) strengths.push('Good understanding of system architecture');
+  if (architectureAvg >= 8) strengths.push('Good understanding of system architecture');
   else improvements.push('Enhance architecture and design pattern knowledge');
 
   if (strengths.length === 0) strengths.push('Shows willingness to attempt challenging questions');
   if (improvements.length === 0) improvements.push('Continue building on strong fundamentals');
 
   let recommendation = '';
-  if (overallScore >= 85) recommendation = 'Strong Hire - Candidate demonstrates exceptional skills and is highly recommended for the role.';
-  else if (overallScore >= 70) recommendation = 'Hire - Candidate shows solid competence and is suitable for the position.';
-  else if (overallScore >= 55) recommendation = 'Lean Hire - Candidate has potential but may need mentoring in certain areas.';
+  if (overallScore >= 8.5) recommendation = 'Strong Hire - Candidate demonstrates exceptional skills and is highly recommended for the role.';
+  else if (overallScore >= 7) recommendation = 'Hire - Candidate shows solid competence and is suitable for the position.';
+  else if (overallScore >= 5.5) recommendation = 'Lean Hire - Candidate has potential but may need mentoring in certain areas.';
   else recommendation = 'No Hire - Candidate needs significant improvement in key areas before reconsidering.';
 
   const skillMap = extractSkillMap(profile, scores);
@@ -141,12 +144,39 @@ function extractSkillMap(profile: CandidateProfile, scores: QuestionScore[]) {
     'Problem Solving', 'System Design', 'Communication', 'Technical Depth', 'Code Quality', 'Adaptability'
   ];
 
-  return baseSkills.map((skill, i) => ({
-    skill,
-    level: Math.min(100, Math.max(20, Math.round(
-      avg(scores.map(s => s.overall)) + (Math.random() * 20 - 10) + (i * 3)
-    ))),
-  }));
+  return baseSkills.map((skill) => {
+    const sLower = skill.toLowerCase();
+    
+    // Look for skill mentions directly in the Q&A text
+    const relevantScores = scores.filter(s => 
+      (s.question && s.question.toLowerCase().includes(sLower)) || 
+      (s.answer && s.answer.toLowerCase().includes(sLower)) ||
+      (s.feedback && s.feedback.toLowerCase().includes(sLower))
+    );
+
+    const norm = (v: number) => v > 10 ? v / 10 : v;
+
+    let level = 0;
+    if (relevantScores.length > 0) {
+      level = Math.round(avg(relevantScores.map(s => norm(s.overall))));
+    } else {
+      // Map intrinsic default attributes to exact metrics given by the AI evaluator
+      if (sLower === 'communication') level = Math.round(avg(scores.map(s => norm(s.clarity))));
+      else if (sLower === 'technical depth' || sLower === 'code quality') level = Math.round(avg(scores.map(s => norm(s.technicalDepth))));
+      else if (sLower === 'problem solving') level = Math.round(avg(scores.map(s => norm(s.completeness))));
+      else if (sLower === 'system design' || sLower === 'architecture') level = Math.round(avg(scores.map(s => norm(s.relevance))));
+      else if (sLower === 'adaptability') level = Math.round(avg(scores.map(s => norm((s.clarity + s.relevance) / 2))));
+      else {
+        // Safe fallback for custom resume skills not explicitly mentioned
+        level = Math.round(avg(scores.map(s => norm(s.overall)))); 
+      }
+    }
+    
+    // Bound the values between 0 and 10
+    level = Math.min(10, Math.max(0, level)) || 0;
+
+    return { skill, level };
+  });
 }
 
 function avg(nums: number[]): number {

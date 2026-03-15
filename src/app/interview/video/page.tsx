@@ -696,7 +696,7 @@ export default function VideoInterviewPage() {
 
     const feedbackMsg: Message = {
       id: crypto.randomUUID(), role: 'ai',
-      content: `📊 **Score: ${score.overall}/100**\n${score.feedback}`,
+      content: `📊 **Score: ${score.overall}/10**\n${score.feedback}`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, feedbackMsg]);
@@ -778,7 +778,7 @@ export default function VideoInterviewPage() {
     localStorage.setItem('interviewHistory', JSON.stringify(history.slice(0, 20)));
     const completeMsg: Message = {
       id: crypto.randomUUID(), role: 'ai',
-      content: `🎉 **Interview Complete!**\n\n🏆 Overall Score: **${behavioralReport.overallScore}/100** — ${behavioralReport.recommendation}\n\n📊 Technical: ${behavioralReport.technicalScore}/100\n🗣️ Communication: ${behavioralReport.communicationScore}/100\n🎯 Confidence: ${behavioralReport.confidenceScore}/100\n🧠 Behavior: ${behavioralReport.behaviorScore}/100\n\n${behavioralReport.strengths.length > 0 ? '**Strengths:** ' + behavioralReport.strengths[0] : ''}`,
+      content: `🎉 **Interview Complete!**\n\n🏆 Overall Score: **${behavioralReport.overallScore}/10** — ${behavioralReport.recommendation}\n\n📊 Technical: ${behavioralReport.technicalScore}/10\n🗣️ Communication: ${behavioralReport.communicationScore}/10\n🎯 Confidence: ${behavioralReport.confidenceScore}/10\n🧠 Behavior: ${behavioralReport.behaviorScore}/10\n\n${behavioralReport.strengths.length > 0 ? '**Strengths:** ' + behavioralReport.strengths[0] : ''}`,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, completeMsg]);
