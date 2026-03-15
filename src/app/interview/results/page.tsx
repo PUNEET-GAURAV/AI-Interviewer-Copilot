@@ -61,9 +61,15 @@ export default function ResultsPage() {
   const [result, setResult] = useState<EnhancedResult | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('lastInterviewResult');
-    if (!saved) { router.push('/interview/setup'); return; }
-    setResult(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('lastInterviewResult');
+      if (!saved) { router.push('/interview/setup'); return; }
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== 'object') { router.push('/interview/setup'); return; }
+      setResult(parsed);
+    } catch {
+      router.push('/interview/setup');
+    }
   }, [router]);
 
   if (!result) return (
@@ -74,9 +80,9 @@ export default function ResultsPage() {
 
   const br = result.behavioralReport;
   const isVideo = result.interviewType === 'video' && br;
-  const overallScore = isVideo ? br!.overallScore : result.overallScore;
-  const recommendation = isVideo ? br!.recommendation : (result.overallScore >= 85 ? 'Strong Hire' : result.overallScore >= 70 ? 'Hire' : result.overallScore >= 55 ? 'Maybe' : 'Reject');
-  const recColor = isVideo ? br!.recommendationColor : (result.overallScore >= 80 ? 'var(--accent-green)' : result.overallScore >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)');
+  const overallScore = isVideo ? br!.overallScore : (result.overallScore || 0);
+  const recommendation = isVideo ? br!.recommendation : ((result.overallScore || 0) >= 85 ? 'Strong Hire' : (result.overallScore || 0) >= 70 ? 'Hire' : (result.overallScore || 0) >= 55 ? 'Maybe' : 'Reject');
+  const recColor = isVideo ? br!.recommendationColor : ((result.overallScore || 0) >= 80 ? 'var(--accent-green)' : (result.overallScore || 0) >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)');
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
@@ -101,7 +107,7 @@ export default function ResultsPage() {
             <span className="gradient-text">AI Evaluation Report</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
-            {result.candidateProfile.role} • {result.candidateProfile.companyStyle} Style
+            {result.candidateProfile?.role || 'Interview'} • {result.candidateProfile?.companyStyle || 'General'} Style
             {result.duration && <> • {Math.floor(result.duration / 60)} min {result.duration % 60}s</>}
           </p>
         </div>
@@ -112,7 +118,7 @@ export default function ResultsPage() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>🚨</div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent-red)', marginBottom: 8 }}>Interview Terminated</h2>
             <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: 20 }}>
-              {result.improvements[0] || 'Candidate rejected due to policy violations.'}
+              {(result.improvements && result.improvements[0]) || 'Candidate rejected due to policy violations.'}
             </p>
             <div style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)', fontWeight: 600 }}>
               Final Decision: Rejected
@@ -225,10 +231,10 @@ export default function ResultsPage() {
         {/* Category Scores (existing) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, marginBottom: 24 }}>
           {[
-            { label: 'Technical Depth', score: result.technicalAvg, icon: '⚙️' },
-            { label: 'Architecture', score: result.architectureAvg, icon: '🏗️' },
-            { label: 'Communication', score: result.communicationAvg, icon: '💬' },
-            { label: 'Problem Solving', score: result.problemSolvingAvg, icon: '🧩' },
+            { label: 'Technical Depth', score: result.technicalAvg || 0, icon: '⚙️' },
+            { label: 'Architecture', score: result.architectureAvg || 0, icon: '🏗️' },
+            { label: 'Communication', score: result.communicationAvg || 0, icon: '💬' },
+            { label: 'Problem Solving', score: result.problemSolvingAvg || 0, icon: '🧩' },
           ].map(cat => (
             <div key={cat.label} className="glass-card" style={{ padding: 20, textAlign: 'center' }}>
               <ScoreRing score={cat.score} size={80} label="" />
@@ -243,7 +249,7 @@ export default function ResultsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 24 }}>
           <div className="glass-card" style={{ padding: 24 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, color: 'var(--accent-green)' }}>💪 Strengths</h3>
-            {(isVideo && br ? br.strengths : result.strengths).map((s, i) => (
+            {(isVideo && br ? br.strengths : (result.strengths || [])).map((s, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 10 }}>
                 <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>✓</span>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s}</span>
@@ -252,7 +258,7 @@ export default function ResultsPage() {
           </div>
           <div className="glass-card" style={{ padding: 24 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, color: 'var(--accent-amber)' }}>📝 Areas for Improvement</h3>
-            {(isVideo && br ? [...br.weaknesses, ...br.improvements] : result.improvements).map((s, i) => (
+            {(isVideo && br ? [...(br.weaknesses || []), ...(br.improvements || [])] : (result.improvements || [])).map((s, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 10 }}>
                 <span style={{ color: 'var(--accent-amber)', fontSize: 13 }}>→</span>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s}</span>
@@ -264,7 +270,7 @@ export default function ResultsPage() {
         {/* Question-by-Question */}
         <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>📋 Question-by-Question Analysis</h3>
-          {result.scores.map((s, i) => (
+          {(result.scores || []).map((s, i) => (
             <div key={i} className="glass-card-sm" style={{ padding: 18, marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div style={{ flex: 1 }}>
