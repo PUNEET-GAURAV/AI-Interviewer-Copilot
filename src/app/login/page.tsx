@@ -3,21 +3,47 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, signInWithGoogle } from '@/lib/firebase/config';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) {
+      setErrorMsg("Firebase Auth is not initialized properly.");
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate auth
-    setTimeout(() => {
-      localStorage.setItem('user', JSON.stringify({ email, name: email.split('@')[0], role: 'candidate' }));
+    setErrorMsg('');
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem('userRole', 'candidate'); // Default role assumption for standard logins
       router.push('/dashboard');
-    }, 800);
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
+        localStorage.setItem('userRole', 'candidate');
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Google Sign-In failed.');
+    }
   };
 
   return (
@@ -46,6 +72,27 @@ export default function LoginPage() {
             {isLoading ? '⏳ Signing In...' : 'Sign In'}
           </button>
         </form>
+
+        {errorMsg && (
+          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--accent-red)', fontSize: 13 }}>
+            ❌ {errorMsg}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+        </div>
+
+        <button 
+          onClick={handleGoogleSignIn}
+          className="btn-secondary" 
+          style={{ width: '100%', padding: '12px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s' }}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          Sign in with Google
+        </button>
 
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: 'var(--text-muted)' }}>
           Don&apos;t have an account? <Link href="/register" style={{ color: 'var(--accent-cyan)', textDecoration: 'none', fontWeight: 600 }}>Create one</Link>

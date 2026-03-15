@@ -135,7 +135,7 @@ export default function LandingPage() {
         </div>
 
         {/* Role Selection Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28, maxWidth: 760, width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28, maxWidth: 1000, width: '100%' }}>
           {/* Admin Card */}
           <button
             onClick={() => handleSelect('admin')}
@@ -197,6 +197,45 @@ export default function LandingPage() {
             </div>
             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 14, color: 'var(--accent-cyan)' }}>
               Candidate Portal →
+            </div>
+          </button>
+          
+          {/* Beginner Mock Interview */}
+          <button
+            onClick={() => handleSelect('candidate')}
+            style={{
+              padding: 40, borderRadius: 20, cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)', fontFamily: 'Inter, sans-serif',
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--glass-border)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+              e.currentTarget.style.borderColor = 'var(--accent-amber)';
+              e.currentTarget.style.boxShadow = '0 20px 60px rgba(245,158,11,0.15)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.05))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'var(--glass-border)';
+              e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+              e.currentTarget.style.background = 'var(--glass-bg)';
+            }}
+          >
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'linear-gradient(135deg, var(--accent-amber), var(--accent-red))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 20 }}>🎓</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, color: 'var(--text-primary)' }}>Beginner <span style={{ color: 'var(--accent-amber)' }}>Mock Interview</span></h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+              Just starting out? Experience a guided, stress-free AI interview designed to teach you the basics and build your confidence.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {['Guided Mode', 'Beginner Friendly', 'Real-world Environment'].map(tag => (
+                <span key={tag} className="tag tag-amber" style={{ fontSize: 11, background: 'rgba(245,158,11,0.1)', color: 'var(--accent-amber)', border: '1px solid rgba(245,158,11,0.2)' }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 14, color: 'var(--accent-amber)' }}>
+              Start Learning →
             </div>
           </button>
         </div>

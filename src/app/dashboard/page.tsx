@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { InterviewResult } from '@/lib/interview-engine';
+import { useAuth } from '@/lib/firebase/AuthContext';
 
 const SAMPLE_HISTORY: Partial<InterviewResult>[] = [
   { candidateProfile: { name: '', role: 'Backend Engineer', experience: '3 years', skills: [], companyStyle: 'FAANG', resumeText: '' }, overallScore: 8.4, completedAt: new Date('2026-03-12') },
@@ -11,15 +13,17 @@ const SAMPLE_HISTORY: Partial<InterviewResult>[] = [
 ];
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState('Candidate');
+  const router = useRouter();
+  const { user, loading } = useAuth();
   const [history, setHistory] = useState<Partial<InterviewResult>[]>([]);
 
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      const parsed = JSON.parse(user);
-      setUserName(parsed.name || parsed.email?.split('@')[0] || 'Candidate');
+    if (!loading && !user) {
+      router.push('/login'); // Force unauthenticated users back to login
     }
+  }, [user, loading, router]);
+
+  useEffect(() => {
     const saved = localStorage.getItem('interviewHistory');
     if (saved) {
       try {
@@ -31,9 +35,14 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const userName = user?.displayName || user?.email?.split('@')[0] || 'Candidate';
+
   const avgScore = history.length > 0
     ? Math.round(history.reduce((s, h) => s + (h.overallScore || 0), 0) / history.length)
     : 0;
+
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Loading...</div>;
+  if (!user) return null; // Avoid flicker while redirecting
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
